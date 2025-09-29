@@ -14,7 +14,11 @@ class MeshCollector:
         if obj.type != 'MESH':
             return None
 
-        mesh = obj.to_mesh(preserve_all_data_layers=True, depsgraph=bpy.context.evaluated_depsgraph_get())
+        mesh = obj.to_mesh(
+            preserve_all_data_layers=True,
+            depsgraph=bpy.context.evaluated_depsgraph_get()
+        )
+
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
@@ -26,7 +30,9 @@ class MeshCollector:
 
         vertices = [v.co[:] for v in mesh.vertices]
         normals = [v.normal[:] for v in mesh.vertices]
-        indices = [loop.vertex_index for poly in mesh.polygons for loop in poly.loop_indices]
+
+        # ✅ 修复 indices 生成方式
+        indices = [mesh.loops[li].vertex_index for poly in mesh.polygons for li in poly.loop_indices]
 
         uvs = []
         if mesh.uv_layers.active:
@@ -42,6 +48,8 @@ class MeshCollector:
         bbox_max = [max(v[i] for v in vertices) for i in range(3)]
 
         obj.to_mesh_clear()
+
+        logger.info(f"Collected mesh '{obj.name}': {len(vertices)} verts, {len(indices)//3} tris")
 
         return {
             "vertices": vertices,
@@ -72,6 +80,7 @@ class SkeletonCollector:
                 "tail": bone.tail_local[:],
                 "matrix": bone.matrix_local[:],
             })
+        logger.info(f"Collected skeleton '{obj.name}': {len(bones)} bones")
         return bones
 
 
@@ -94,6 +103,8 @@ class AnimationCollector:
                 "frame": frame,
                 "matrix": [list(row) for row in mat],
             })
+
+        logger.info(f"Collected animation '{action.name}' from '{obj.name}': {len(anim_data['frames'])} frames")
         return anim_data
 
 
@@ -117,6 +128,9 @@ class MaterialCollector:
                     if node.type == 'TEX_IMAGE' and node.image:
                         mat_info["textures"][node.label or node.name] = bpy.path.abspath(node.image.filepath)
             mats.append(mat_info)
+
+        if mats:
+            logger.info(f"Collected {len(mats)} materials from '{obj.name}'")
         return mats
 
 
