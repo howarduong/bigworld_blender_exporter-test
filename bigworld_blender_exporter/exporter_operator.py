@@ -58,7 +58,6 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
     def execute(self, context):
         config = get_config()
         LOG.info("开始导出 BigWorld 模型")
-        LOG.info(f"配置: unitScale={config.get('unitScale')} res_root={config.get('res_root')} default_fx={config.get('default_fx')} normal_mapped={config.get('normal_mapped')} primitives_binary={config.get('primitives_binary')} prefer_dds={config.get('prefer_dds')} max_uv_layers={config.get('max_uv_layers')} force_static_hierarchy={config.get('force_static_hierarchy')}")
 
         checks = preflight_check(context.scene, config)
         for k, lst in checks.items():
@@ -83,6 +82,7 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
         material_fx_map = {}
         prefer_dds = bool(config.getboolean("prefer_dds"))
 
+        # 收集材质
         for idx, mat in enumerate(bpy.data.materials):
             fx_hint = getattr(mat, "bigworld_fx", "") if hasattr(mat, "bigworld_fx") else ""
             resolved_fx, status, candidates = resolve_fx_for_material(
@@ -103,10 +103,15 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
                     if n.type == 'TEX_IMAGE' and getattr(n, "image", None):
                         name_lower = (n.name or "").lower()
                         color_space = "linear" if "normal" in name_lower else "srgb"
-                        tex_rel = export_image(n.image, tmp_res_root, config.get("res_root","res"), prefer_dds=prefer_dds, color_space=color_space)
+                        tex_rel = export_image(n.image, tmp_res_root, config.get("res_root","res"),
+                                               prefer_dds=prefer_dds, color_space=color_space)
                         if tex_rel:
                             textures_list.append(tex_rel)
-            material_fx_map[idx] = {"name": mat.name, "fx": resolved_fx or config.get("default_fx"), "textures": textures_list}
+            material_fx_map[idx] = {
+                "name": mat.name,
+                "fx": resolved_fx or config.get("default_fx"),
+                "textures": textures_list
+            }
 
         with open(os.path.join(tmp_dir, "fx_map.json"), "w", encoding="utf-8") as f:
             json.dump(fx_map, f, indent=2, ensure_ascii=False)
@@ -134,8 +139,14 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
                 collisionFlags=int(config.get("collisionFlags", 0)),
                 force_static_hierarchy=force_static_hierarchy
             )
-            # materialNames：按 slots 顺序（以 material_fx_map 的 key 排序）
-            mat_names = [material_fx_map.get(i, {}).get("name", f"mat_{i}") for i in range(len(material_fx_map))]
+
+            # 修正：materialNames 使用与 .visual 中一致的 identifier
+            mat_names = []
+            for i in range(len(material_fx_map)):
+                mat_info = material_fx_map.get(i, {})
+                if mat_info:
+                    mat_names.append(f"materials/{mat_info.get('name', f'mat_{i}')}")
+            
             model_rel = write_model_for_object(
                 obj, visual_rel, tmp_res_root, rel_model_dir="models",
                 bounding_box=primitives_meta.get("bounding_box"),
@@ -185,7 +196,4 @@ def register():
 
 def unregister():
     bpy.types.TOPBAR_MT_file_export.remove(menu_func)
-    bpy.utils.unregister_class(BIGWORLDEXPORTER_OT_export)
-
-if __name__ == "__main__":
-    register()
+    bpy
