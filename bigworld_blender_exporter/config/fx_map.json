@@ -1,6 +1,0 @@
-{
-  "Principled BSDF": "shaders/std_effects/lightonly.fx",
-  "Skin": "shaders/std_effects/lightonly_skinned.fx",
-  "Environment": "shaders/environment/metal.fx",
-  "Particle": "shaders/particles/basic.fx"
-}
