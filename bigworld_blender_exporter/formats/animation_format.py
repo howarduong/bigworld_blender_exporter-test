@@ -1,141 +1,106 @@
-# 文件位置: bigworld_blender_exporter/formats/animation_format.py
-# Animation file format for BigWorld export
-
-import struct
+# -*- coding: utf-8 -*-
 import os
-from datetime import datetime
-from ..utils.binary_writer import (
-    create_directory, write_uint32, write_float32, write_float3, write_float4
-)
+import xml.etree.ElementTree as ET
 from ..utils.logger import get_logger
 
 logger = get_logger("animation_format")
 
 
+def _vec3_to_text(v):
+    # v: (x, y, z)
+    return f"{float(v[0]):.6f} {float(v[1]):.6f} {float(v[2]):.6f}"
+
+
+def _quat_to_text(q):
+    # q: (x, y, z, w) — 输出顺序为 w x y z，符合常见引擎约定
+    return f"{float(q[3]):.6f} {float(q[0]):.6f} {float(q[1]):.6f} {float(q[2]):.6f}"
+
+
+def create_animation_xml(animation_data):
+    """
+    创建符合 BigWorld 规范的 .animation XML 树。
+
+    参数结构示例（请在导出器中组装该字典）：
+    animation_data = {
+        "name": "walk",
+        "frame_rate": 30.0,
+        "duration": 2.0,
+        "loop": True,
+        "channels": [
+            {
+                "bone": "Hip",
+                "keyframes": [
+                    {
+                        "time": 0.0,
+                        "position": (0.0, 0.0, 0.0),
+                        "rotation": (0.0, 0.0, 0.0, 1.0),  # (x, y, z, w)
+                        "scale": (1.0, 1.0, 1.0)
+                    },
+                    # ...
+                ]
+            },
+            # 更多骨骼……
+        ]
+    }
+    """
+    root = ET.Element("animation")
+
+    # 基本信息
+    name_elem = ET.SubElement(root, "name")
+    name_elem.text = animation_data.get("name", "unnamed")
+
+    fr_elem = ET.SubElement(root, "frameRate")
+    fr_elem.text = f"{float(animation_data.get('frame_rate', 30.0)):.6f}"
+
+    dur_elem = ET.SubElement(root, "duration")
+    dur_elem.text = f"{float(animation_data.get('duration', 0.0)):.6f}"
+
+    loop_elem = ET.SubElement(root, "loop")
+    loop_elem.text = "true" if bool(animation_data.get("loop", False)) else "false"
+
+    # 通道（每个骨骼一个 channel）
+    channels_elem = ET.SubElement(root, "channels")
+
+    for ch in animation_data.get("channels", []):
+        channel_elem = ET.SubElement(channels_elem, "channel")
+
+        bone_elem = ET.SubElement(channel_elem, "bone")
+        bone_elem.text = ch.get("bone", "")
+
+        kfs_elem = ET.SubElement(channel_elem, "keyframes")
+
+        for kf in ch.get("keyframes", []):
+            kf_elem = ET.SubElement(kfs_elem, "keyframe")
+
+            t_elem = ET.SubElement(kf_elem, "time")
+            t_elem.text = f"{float(kf.get('time', 0.0)):.6f}"
+
+            p_elem = ET.SubElement(kf_elem, "position")
+            p_elem.text = _vec3_to_text(kf.get("position", (0.0, 0.0, 0.0)))
+
+            r_elem = ET.SubElement(kf_elem, "rotation")
+            r_elem.text = _quat_to_text(kf.get("rotation", (0.0, 0.0, 0.0, 1.0)))
+
+            s_elem = ET.SubElement(kf_elem, "scale")
+            s_elem.text = _vec3_to_text(kf.get("scale", (1.0, 1.0, 1.0)))
+
+    return ET.ElementTree(root)
+
+
 def export_animation_file(filepath, animation_data):
     """
-    Export animation data to BigWorld .animation file
+    导出 .animation 文件（XML）
+    - 路径由上层传入（建议位于 res/animations/...）
+    - animation_data 结构参考 create_animation_xml 的说明
     """
     try:
         logger.info(f"Exporting animation file: {filepath}")
-        create_directory(filepath)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
-        with open(filepath, 'wb') as f:
-            # Header
-            write_animation_header(f, animation_data)
-            # Bone data
-            write_bone_data(f, animation_data['bones'])
-            # Keyframe data
-            write_keyframe_data(f, animation_data['keyframes'])
+        tree = create_animation_xml(animation_data)
+        tree.write(filepath, encoding="utf-8", xml_declaration=True)
 
         logger.info(f"Animation file written: {filepath}")
     except Exception as e:
         logger.error(f"Failed to export animation file {filepath}: {str(e)}")
         raise
-
-
-def write_animation_header(f, animation_data):
-    """Write animation file header"""
-    # Magic number for BigWorld animation files
-    f.write(struct.pack('<I', 0x42570101))  # BW magic
-    # Version
-    f.write(struct.pack('<I', 0x01000000))  # 1.0.0.0
-    # Bone count
-    write_uint32(f, len(animation_data['bones']))
-    # Keyframe count
-    write_uint32(f, len(animation_data['keyframes']))
-    # Frame rate
-    write_float32(f, animation_data['frame_rate'])
-    # Duration
-    write_float32(f, animation_data['duration'])
-    # Animation name (UTF-8, null-terminated, 64 bytes max)
-    name = animation_data['name'][:63].encode('utf-8', errors='ignore')
-    f.write(name)
-    f.write(b'\0' * (64 - len(name)))
-    # Loop flag
-    f.write(struct.pack('<B', 1 if animation_data.get('loop', False) else 0))
-    # Padding
-    f.write(b'\0' * 3)
-    # Export timestamp
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S").encode('ascii')
-    ts = ts[:31]  # max 32 bytes
-    f.write(ts)
-    f.write(b'\0' * (32 - len(ts)))
-
-
-def write_bone_data(f, bones_data):
-    """Write bone hierarchy data"""
-    for bone in bones_data:
-        # Bone name (null-terminated string, 32 chars max)
-        name = bone['name'][:31].encode('utf-8', errors='ignore')
-        f.write(name)
-        f.write(b'\0' * (32 - len(name)))
-        # Parent bone index (-1 if no parent)
-        parent_index = -1
-        if bone['parent']:
-            for i, b in enumerate(bones_data):
-                if b['name'] == bone['parent']:
-                    parent_index = i
-                    break
-        f.write(struct.pack('<i', parent_index))
-        # Bone length
-        write_float32(f, bone.get('length', 1.0))
-        # Head position
-        write_float3(f, *bone['head'])
-        # Tail position
-        write_float3(f, *bone['tail'])
-
-
-def write_keyframe_data(f, keyframes, threshold=0.0001):
-    """Write keyframe animation data with optional compression"""
-    last_transforms = {}
-    for keyframe in keyframes:
-        # Frame number
-        write_uint32(f, keyframe['frame'])
-        # Time
-        write_float32(f, keyframe['time'])
-        # Bone transforms
-        for bone_name, transform in keyframe['bone_transforms'].items():
-            prev = last_transforms.get(bone_name)
-            if prev and _is_similar(prev, transform, threshold):
-                # 写入 identity 代替，节省空间
-                write_float3(f, 0.0, 0.0, 0.0)
-                write_float4(f, 1.0, 0.0, 0.0, 0.0)
-                write_float3(f, 1.0, 1.0, 1.0)
-            else:
-                write_float3(f, *transform['position'])
-                write_float4(f, transform['rotation'][3], transform['rotation'][0],
-                             transform['rotation'][1], transform['rotation'][2])
-                write_float3(f, *transform['scale'])
-                last_transforms[bone_name] = transform
-
-
-def _is_similar(t1, t2, threshold):
-    """Check if two transforms are similar enough to skip"""
-    def diff(a, b): return abs(a - b) < threshold
-    return (
-        all(diff(a, b) for a, b in zip(t1['position'], t2['position'])) and
-        all(diff(a, b) for a, b in zip(t1['rotation'], t2['rotation'])) and
-        all(diff(a, b) for a, b in zip(t1['scale'], t2['scale']))
-    )
-
-
-def export_animation_data_legacy(filepath, frames, bones):
-    """Legacy animation export function for backward compatibility"""
-    logger.warning("Using legacy animation export format")
-    create_directory(filepath)
-    with open(filepath, 'wb') as f:
-        # Write frame and bone count
-        f.write(struct.pack('<II', len(frames), len(bones)))
-        for frame in frames:
-            for bone in bones:
-                if bone in frame:
-                    t = frame[bone]['position']
-                    r = frame[bone]['rotation']
-                    s = frame[bone]['scale']
-                    f.write(struct.pack('<3f4f3f', t[0], t[1], t[2],
-                                        r[3], r[0], r[1], r[2],
-                                        s[0], s[1], s[2]))
-                else:
-                    # Identity transform
-                    f.write(struct.pack('<3f4f3f', 0, 0, 0, 1, 0, 0, 0, 1, 1, 1))
