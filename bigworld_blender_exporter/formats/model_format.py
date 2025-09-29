@@ -10,29 +10,44 @@ def export_model_file(filepath, model_data):
     """Export model data to BigWorld .model file"""
     logger.info(f"Exporting model file: {filepath}")
     
-    # Create XML structure（严格对齐BigWorld标准）
+    # 严格对齐BigWorld官方.model文件BNF/示例，支持多材质、动画、父节点、bsp等，顺序与嵌套完全一致
     import xml.etree.ElementTree as ET
     root = ET.Element('model')
-    # metaData（可选，填默认值）
+    # 1. metaData
     meta = ET.SubElement(root, 'metaData')
     ET.SubElement(meta, 'copyright').text = 'Copyright BigWorld Pty Ltd.  Use freely in any BigWorld licensed game.'
-    ET.SubElement(meta, 'created_by').text = 'blender_exporter'
-    ET.SubElement(meta, 'created_on').text = '0'
-    ET.SubElement(meta, 'modified_by').text = 'blender_exporter'
-    ET.SubElement(meta, 'modified_on').text = '0'
-    # nodefullVisual
+    ET.SubElement(meta, 'created_by').text = model_data.get('created_by', 'blender_exporter')
+    ET.SubElement(meta, 'created_on').text = str(model_data.get('created_on', '0'))
+    ET.SubElement(meta, 'modified_by').text = model_data.get('modified_by', 'blender_exporter')
+    ET.SubElement(meta, 'modified_on').text = str(model_data.get('modified_on', '0'))
+    # 2. nodefullVisual
     ET.SubElement(root, 'nodefullVisual').text = model_data.get('visual', '')
-    # materialNames（可为空）
-    ET.SubElement(root, 'materialNames').text = ''
-    # visibilityBox（用原boundingBox数据填充）
+    # 3. materialNames（支持多材质）
+    mats = model_data.get('materials', [])
+    mat_names = ','.join([m['name'] for m in mats]) if mats else ''
+    ET.SubElement(root, 'materialNames').text = mat_names
+    # 4. visibilityBox
     visbox = ET.SubElement(root, 'visibilityBox')
     ET.SubElement(visbox, 'min').text = model_data.get('bbox_min', '-1.0 -1.0 -1.0')
     ET.SubElement(visbox, 'max').text = model_data.get('bbox_max', '1.0 1.0 1.0')
-    # extent（建议默认10.000000）
+    # 5. extent
     ET.SubElement(root, 'extent').text = f"{model_data.get('extent', 10.0):.6f}"
-    # parent
+    # 6. parent
     ET.SubElement(root, 'parent').text = model_data.get('parent', '')
-    # editorOnly（可选保留）
+    # 7. action/animation（占位，支持动画列表）
+    actions = model_data.get('actions', [])
+    if actions:
+        actions_elem = ET.SubElement(root, 'actions')
+        for act in actions:
+            act_elem = ET.SubElement(actions_elem, 'action')
+            act_elem.text = act
+    animations = model_data.get('animations', [])
+    if animations:
+        anims_elem = ET.SubElement(root, 'animations')
+        for anim in animations:
+            anim_elem = ET.SubElement(anims_elem, 'animation')
+            anim_elem.text = anim
+    # 8. editorOnly（可选保留）
     editor = ET.SubElement(root, 'editorOnly')
     bsp = ET.SubElement(editor, 'bspModels')
     ET.SubElement(bsp, 'model').text = model_data.get('bsp_model', '')

@@ -19,16 +19,25 @@ def export_primitives_file(filepath, vertices, indices, vertex_format='STANDARD'
     vertex_size = 0
     if vertices:
         vertex_size = len(pack_vertex_data(vertices[0], vertex_format))
-    
+    # 自动选择索引格式
+    index_count = len(indices)
+    if index_count == 0:
+        index_fmt = '<H'  # 默认16位
+        index_size = 2
+    elif max(indices) < 65536:
+        index_fmt = '<H'  # 16位
+        index_size = 2
+    else:
+        index_fmt = '<I'  # 32位
+        index_size = 4
+    logger.info(f"Index format: {'uint16' if index_size==2 else 'uint32'} ({index_size} bytes), count={index_count}")
     with open(filepath, 'wb') as f:
         # Write header (using computed vertex_size)
         write_primitives_header(f, vertices, indices, vertex_size, vertex_format)
-        
         # Write vertex data
         write_vertex_buffer(f, vertices, vertex_format)
-        
         # Write index data
-        write_index_buffer(f, indices)
+        write_index_buffer(f, indices, index_fmt)
 
 def write_primitives_header(f, vertices, indices, vertex_size, vertex_format):
     """Write primitives file header"""
@@ -60,13 +69,12 @@ def write_vertex_buffer(f, vertices, vertex_format):
         packed_vertex = pack_vertex_data(vertex, vertex_format)
         write_bytes(f, packed_vertex)
 
-def write_index_buffer(f, indices):
-    """Write index buffer data"""
-    logger.info(f"Writing {len(indices)} indices")
-    
+def write_index_buffer(f, indices, index_fmt):
+    """Write index buffer data, 支持16/32位自动选择"""
+    import struct
+    logger.info(f"Writing {len(indices)} indices, format={index_fmt}")
     for index in indices:
-        # Write as 16-bit unsigned integer
-        f.write(struct.pack('<H', index))
+        f.write(struct.pack(index_fmt, index))
 
 def pack_vertex_data(vertex_data, format_type='STANDARD'):
     """Pack vertex data according to BigWorld format"""

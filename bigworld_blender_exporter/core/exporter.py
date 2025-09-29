@@ -17,10 +17,32 @@ class BigWorldExporter:
 
     def export(self):
         logger.info("开始导出流程 Start export process")
-        self.collect_data()
-        self.validate()
-        self.write_files()
-        logger.info("导出完成 Export finished")
+        try:
+            self.collect_data()
+            self.validate()
+            self.write_files()
+            self._write_manifest()
+            logger.info("导出完成 Export finished")
+        except Exception as e:
+            logger.error(f"导出流程异常: {e}")
+            raise
+
+    def _write_manifest(self):
+        """生成导出清单manifest，包含所有导出文件及统计信息。"""
+        import os
+        export_root = self.settings.export_path or '.'
+        manifest_path = os.path.join(export_root, "export_manifest.txt")
+        files = []
+        for root, _, filenames in os.walk(export_root):
+            for fname in filenames:
+                if not fname.endswith('.log'):
+                    files.append(os.path.relpath(os.path.join(root, fname), export_root))
+        with open(manifest_path, 'w', encoding='utf-8') as f:
+            f.write("BigWorld导出清单\n")
+            f.write(f"总文件数: {len(files)}\n")
+            for fname in files:
+                f.write(fname + "\n")
+        logger.info(f"导出清单已生成: {manifest_path}")
 
     def collect_data(self):
         logger.info("收集数据 Collecting data")

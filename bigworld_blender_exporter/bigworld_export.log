@@ -937,3 +937,467 @@
 2025-09-29 19:17:44,297 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.visual
 2025-09-29 19:17:44,297 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.model
 2025-09-29 19:17:44,298 BigWorldExporter INFO: 导出完成 Export finished
+2025-09-29 21:02:51,504 bigworld_exporter INFO: Registering BigWorld Exporter addon...
+2025-09-29 21:02:51,504 bigworld_exporter INFO: BigWorld Exporter addon registered successfully
+2025-09-29 21:02:58,278 bigworld_exporter INFO: Unregistering BigWorld Exporter addon...
+2025-09-29 21:02:58,278 bigworld_exporter INFO: BigWorld Exporter addon unregistered
+2025-09-29 21:02:58,667 bigworld_exporter INFO: Registering BigWorld Exporter addon...
+2025-09-29 21:02:58,668 bigworld_exporter INFO: BigWorld Exporter addon registered successfully
+2025-09-29 21:04:12,663 operators INFO: Starting model export...
+2025-09-29 21:04:12,663 BigWorldExporter INFO: 开始导出流程 Start export process
+2025-09-29 21:04:12,663 BigWorldExporter INFO: 收集数据 Collecting data
+2025-09-29 21:04:12,663 BigWorldExporter INFO: Processing mesh object: humanfemale
+2025-09-29 21:04:12,663 BigWorldExporter ERROR: Mesh validation failed for humanfemale: 对象没有网格数据 (Object has no mesh data)
+2025-09-29 21:04:12,664 BigWorldExporter INFO: Processing materials for object: humanfemale
+2025-09-29 21:04:12,664 BigWorldExporter INFO: Processing mesh object: humanfemale_Geoset0
+2025-09-29 21:04:12,766 BigWorldExporter INFO: Processed 2016 vertices and 2016 indices for humanfemale_Geoset0
+2025-09-29 21:04:12,766 BigWorldExporter INFO: Processing materials for object: humanfemale_Geoset0
+2025-09-29 21:04:12,768 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:04:12,768 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:04:12,768 BigWorldExporter INFO: Processing mesh object: humanfemale_Geoset1
+2025-09-29 21:04:12,769 BigWorldExporter INFO: Processed 12 vertices and 12 indices for humanfemale_Geoset1
+2025-09-29 21:04:12,769 BigWorldExporter INFO: Processing materials for object: humanfemale_Geoset1
+2025-09-29 21:04:12,777 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:04:12,778 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:04:12,778 BigWorldExporter INFO: Processing mesh object: humanfemale_Hair16
+2025-09-29 21:04:12,854 BigWorldExporter INFO: Processed 561 vertices and 561 indices for humanfemale_Hair16
+2025-09-29 21:04:12,854 BigWorldExporter INFO: Processing materials for object: humanfemale_Hair16
+2025-09-29 21:04:12,854 BigWorldExporter INFO: Copied texture: data-6.png
+2025-09-29 21:04:12,854 BigWorldExporter INFO: Processed material: data-6 with 1 textures
+2025-09-29 21:04:12,854 BigWorldExporter INFO: Processing mesh object: humanfemale_FacialC2
+2025-09-29 21:04:12,863 BigWorldExporter INFO: Processed 96 vertices and 96 indices for humanfemale_FacialC2
+2025-09-29 21:04:12,863 BigWorldExporter INFO: Processing materials for object: humanfemale_FacialC2
+2025-09-29 21:04:12,864 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:04:12,864 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:04:12,864 BigWorldExporter INFO: Processing mesh object: humanfemale_Gloves1
+2025-09-29 21:04:12,874 BigWorldExporter INFO: Processed 216 vertices and 216 indices for humanfemale_Gloves1
+2025-09-29 21:04:12,874 BigWorldExporter INFO: Processing materials for object: humanfemale_Gloves1
+2025-09-29 21:04:12,874 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:04:12,877 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:04:12,877 BigWorldExporter INFO: Processing mesh object: humanfemale_Boots1
+2025-09-29 21:04:12,909 BigWorldExporter INFO: Processed 390 vertices and 390 indices for humanfemale_Boots1
+2025-09-29 21:04:12,909 BigWorldExporter INFO: Processing materials for object: humanfemale_Boots1
+2025-09-29 21:04:12,909 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:04:12,909 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:04:12,909 BigWorldExporter INFO: Processing mesh object: humanfemale_Ears1
+2025-09-29 21:04:12,913 BigWorldExporter INFO: Processed 18 vertices and 18 indices for humanfemale_Ears1
+2025-09-29 21:04:12,913 BigWorldExporter INFO: Processing materials for object: humanfemale_Ears1
+2025-09-29 21:04:12,913 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:04:12,913 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:04:12,913 BigWorldExporter INFO: Processing mesh object: humanfemale_Trousers1
+2025-09-29 21:04:12,957 BigWorldExporter INFO: Processed 414 vertices and 414 indices for humanfemale_Trousers1
+2025-09-29 21:04:12,957 BigWorldExporter INFO: Processing materials for object: humanfemale_Trousers1
+2025-09-29 21:04:12,957 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:04:12,957 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:04:12,957 BigWorldExporter INFO: Processing mesh object: humanfemale_Cloak1
+2025-09-29 21:04:12,964 BigWorldExporter INFO: Processed 42 vertices and 42 indices for humanfemale_Cloak1
+2025-09-29 21:04:12,964 BigWorldExporter INFO: Processing materials for object: humanfemale_Cloak1
+2025-09-29 21:04:12,964 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:04:12,964 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:04:12,964 BigWorldExporter INFO: Processing animation: Stand (ID 0 variation 0) for object: humanfemale
+2025-09-29 21:04:12,964 BigWorldExporter ERROR: No armature found for animated object: humanfemale
+2025-09-29 21:04:12,964 BigWorldExporter INFO: 验证数据 Validating data
+2025-09-29 21:04:12,964 BigWorldExporter INFO: 写入文件 Writing files
+2025-09-29 21:04:13,175 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.primitives
+2025-09-29 21:04:13,175 primitives_format INFO: Index format: uint16 (2 bytes), count=2016
+2025-09-29 21:04:13,175 primitives_format INFO: Writing 2016 vertices in STANDARD format
+2025-09-29 21:04:13,200 BigWorldExporter ERROR: 导出流程异常: write_index_buffer() takes 2 positional arguments but 3 were given
+2025-09-29 21:04:13,200 operators ERROR: Export failed: write_index_buffer() takes 2 positional arguments but 3 were given
+2025-09-29 21:05:16,707 bigworld_exporter INFO: Unregistering BigWorld Exporter addon...
+2025-09-29 21:05:16,707 bigworld_exporter INFO: BigWorld Exporter addon unregistered
+2025-09-29 21:05:17,081 bigworld_exporter INFO: Registering BigWorld Exporter addon...
+2025-09-29 21:05:17,084 bigworld_exporter INFO: BigWorld Exporter addon registered successfully
+2025-09-29 21:05:20,877 bigworld_exporter INFO: Unregistering BigWorld Exporter addon...
+2025-09-29 21:05:20,877 bigworld_exporter INFO: BigWorld Exporter addon unregistered
+2025-09-29 21:05:23,906 bigworld_exporter INFO: Registering BigWorld Exporter addon...
+2025-09-29 21:05:23,907 bigworld_exporter INFO: BigWorld Exporter addon registered successfully
+2025-09-29 21:05:30,722 bigworld_exporter INFO: Unregistering BigWorld Exporter addon...
+2025-09-29 21:05:30,723 bigworld_exporter INFO: BigWorld Exporter addon unregistered
+2025-09-29 21:05:31,126 bigworld_exporter INFO: Registering BigWorld Exporter addon...
+2025-09-29 21:05:32,938 bigworld_exporter INFO: BigWorld Exporter addon registered successfully
+2025-09-29 21:06:05,888 operators INFO: Starting model export...
+2025-09-29 21:06:05,889 BigWorldExporter INFO: 开始导出流程 Start export process
+2025-09-29 21:06:05,889 BigWorldExporter INFO: 收集数据 Collecting data
+2025-09-29 21:06:05,889 BigWorldExporter INFO: Processing mesh object: humanfemale
+2025-09-29 21:06:05,889 BigWorldExporter ERROR: Mesh validation failed for humanfemale: 对象没有网格数据 (Object has no mesh data)
+2025-09-29 21:06:05,889 BigWorldExporter INFO: Processing materials for object: humanfemale
+2025-09-29 21:06:05,889 BigWorldExporter INFO: Processing mesh object: humanfemale_Geoset0
+2025-09-29 21:06:05,991 BigWorldExporter INFO: Processed 2016 vertices and 2016 indices for humanfemale_Geoset0
+2025-09-29 21:06:05,991 BigWorldExporter INFO: Processing materials for object: humanfemale_Geoset0
+2025-09-29 21:06:05,992 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:06:05,992 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:06:05,993 BigWorldExporter INFO: Processing mesh object: humanfemale_Geoset1
+2025-09-29 21:06:05,994 BigWorldExporter INFO: Processed 12 vertices and 12 indices for humanfemale_Geoset1
+2025-09-29 21:06:05,994 BigWorldExporter INFO: Processing materials for object: humanfemale_Geoset1
+2025-09-29 21:06:06,003 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:06:06,003 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:06:06,003 BigWorldExporter INFO: Processing mesh object: humanfemale_Hair16
+2025-09-29 21:06:06,017 BigWorldExporter INFO: Processed 561 vertices and 561 indices for humanfemale_Hair16
+2025-09-29 21:06:06,017 BigWorldExporter INFO: Processing materials for object: humanfemale_Hair16
+2025-09-29 21:06:06,018 BigWorldExporter INFO: Copied texture: data-6.png
+2025-09-29 21:06:06,018 BigWorldExporter INFO: Processed material: data-6 with 1 textures
+2025-09-29 21:06:06,018 BigWorldExporter INFO: Processing mesh object: humanfemale_FacialC2
+2025-09-29 21:06:06,022 BigWorldExporter INFO: Processed 96 vertices and 96 indices for humanfemale_FacialC2
+2025-09-29 21:06:06,022 BigWorldExporter INFO: Processing materials for object: humanfemale_FacialC2
+2025-09-29 21:06:06,023 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:06:06,023 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:06:06,023 BigWorldExporter INFO: Processing mesh object: humanfemale_Gloves1
+2025-09-29 21:06:06,035 BigWorldExporter INFO: Processed 216 vertices and 216 indices for humanfemale_Gloves1
+2025-09-29 21:06:06,035 BigWorldExporter INFO: Processing materials for object: humanfemale_Gloves1
+2025-09-29 21:06:06,036 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:06:06,036 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:06:06,036 BigWorldExporter INFO: Processing mesh object: humanfemale_Boots1
+2025-09-29 21:06:06,071 BigWorldExporter INFO: Processed 390 vertices and 390 indices for humanfemale_Boots1
+2025-09-29 21:06:06,071 BigWorldExporter INFO: Processing materials for object: humanfemale_Boots1
+2025-09-29 21:06:06,072 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:06:06,072 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:06:06,072 BigWorldExporter INFO: Processing mesh object: humanfemale_Ears1
+2025-09-29 21:06:06,074 BigWorldExporter INFO: Processed 18 vertices and 18 indices for humanfemale_Ears1
+2025-09-29 21:06:06,074 BigWorldExporter INFO: Processing materials for object: humanfemale_Ears1
+2025-09-29 21:06:06,080 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:06:06,080 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:06:06,080 BigWorldExporter INFO: Processing mesh object: humanfemale_Trousers1
+2025-09-29 21:06:06,122 BigWorldExporter INFO: Processed 414 vertices and 414 indices for humanfemale_Trousers1
+2025-09-29 21:06:06,122 BigWorldExporter INFO: Processing materials for object: humanfemale_Trousers1
+2025-09-29 21:06:06,123 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:06:06,123 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:06:06,123 BigWorldExporter INFO: Processing mesh object: humanfemale_Cloak1
+2025-09-29 21:06:06,125 BigWorldExporter INFO: Processed 42 vertices and 42 indices for humanfemale_Cloak1
+2025-09-29 21:06:06,125 BigWorldExporter INFO: Processing materials for object: humanfemale_Cloak1
+2025-09-29 21:06:06,131 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 21:06:06,131 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 21:06:06,131 BigWorldExporter INFO: Processing animation: Stand (ID 0 variation 0) for object: humanfemale
+2025-09-29 21:06:06,132 BigWorldExporter ERROR: No armature found for animated object: humanfemale
+2025-09-29 21:06:06,132 BigWorldExporter INFO: 验证数据 Validating data
+2025-09-29 21:06:06,132 BigWorldExporter INFO: 写入文件 Writing files
+2025-09-29 21:06:06,199 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.primitives
+2025-09-29 21:06:06,199 primitives_format INFO: Index format: uint16 (2 bytes), count=2016
+2025-09-29 21:06:06,199 primitives_format INFO: Writing 2016 vertices in STANDARD format
+2025-09-29 21:06:06,223 primitives_format INFO: Writing 2016 indices, format=<H
+2025-09-29 21:06:06,223 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Geoset0.mfm
+2025-09-29 21:06:06,223 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.visual
+2025-09-29 21:06:06,223 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.model
+2025-09-29 21:06:06,223 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.primitives
+2025-09-29 21:06:06,227 primitives_format INFO: Index format: uint16 (2 bytes), count=12
+2025-09-29 21:06:06,227 primitives_format INFO: Writing 12 vertices in STANDARD format
+2025-09-29 21:06:06,227 primitives_format INFO: Writing 12 indices, format=<H
+2025-09-29 21:06:06,227 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Geoset1.mfm
+2025-09-29 21:06:06,227 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.visual
+2025-09-29 21:06:06,229 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.model
+2025-09-29 21:06:06,229 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.primitives
+2025-09-29 21:06:06,229 primitives_format INFO: Index format: uint16 (2 bytes), count=561
+2025-09-29 21:06:06,229 primitives_format INFO: Writing 561 vertices in STANDARD format
+2025-09-29 21:06:06,233 primitives_format INFO: Writing 561 indices, format=<H
+2025-09-29 21:06:06,233 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Hair16.mfm
+2025-09-29 21:06:06,233 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.visual
+2025-09-29 21:06:06,233 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.model
+2025-09-29 21:06:06,233 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.primitives
+2025-09-29 21:06:06,233 primitives_format INFO: Index format: uint16 (2 bytes), count=96
+2025-09-29 21:06:06,233 primitives_format INFO: Writing 96 vertices in STANDARD format
+2025-09-29 21:06:06,240 primitives_format INFO: Writing 96 indices, format=<H
+2025-09-29 21:06:06,240 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_FacialC2.mfm
+2025-09-29 21:06:06,240 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.visual
+2025-09-29 21:06:06,242 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.model
+2025-09-29 21:06:06,242 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.primitives
+2025-09-29 21:06:06,242 primitives_format INFO: Index format: uint16 (2 bytes), count=216
+2025-09-29 21:06:06,243 primitives_format INFO: Writing 216 vertices in STANDARD format
+2025-09-29 21:06:06,245 primitives_format INFO: Writing 216 indices, format=<H
+2025-09-29 21:06:06,246 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Gloves1.mfm
+2025-09-29 21:06:06,246 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.visual
+2025-09-29 21:06:06,246 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.model
+2025-09-29 21:06:06,248 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.primitives
+2025-09-29 21:06:06,248 primitives_format INFO: Index format: uint16 (2 bytes), count=390
+2025-09-29 21:06:06,248 primitives_format INFO: Writing 390 vertices in STANDARD format
+2025-09-29 21:06:06,253 primitives_format INFO: Writing 390 indices, format=<H
+2025-09-29 21:06:06,253 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Boots1.mfm
+2025-09-29 21:06:06,253 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.visual
+2025-09-29 21:06:06,253 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.model
+2025-09-29 21:06:06,256 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.primitives
+2025-09-29 21:06:06,256 primitives_format INFO: Index format: uint16 (2 bytes), count=18
+2025-09-29 21:06:06,256 primitives_format INFO: Writing 18 vertices in STANDARD format
+2025-09-29 21:06:06,256 primitives_format INFO: Writing 18 indices, format=<H
+2025-09-29 21:06:06,256 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Ears1.mfm
+2025-09-29 21:06:06,256 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.visual
+2025-09-29 21:06:06,256 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.model
+2025-09-29 21:06:06,256 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.primitives
+2025-09-29 21:06:06,256 primitives_format INFO: Index format: uint16 (2 bytes), count=414
+2025-09-29 21:06:06,260 primitives_format INFO: Writing 414 vertices in STANDARD format
+2025-09-29 21:06:06,265 primitives_format INFO: Writing 414 indices, format=<H
+2025-09-29 21:06:06,265 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Trousers1.mfm
+2025-09-29 21:06:06,265 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.visual
+2025-09-29 21:06:06,265 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.model
+2025-09-29 21:06:06,267 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.primitives
+2025-09-29 21:06:06,267 primitives_format INFO: Index format: uint16 (2 bytes), count=42
+2025-09-29 21:06:06,267 primitives_format INFO: Writing 42 vertices in STANDARD format
+2025-09-29 21:06:06,267 primitives_format INFO: Writing 42 indices, format=<H
+2025-09-29 21:06:06,267 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Cloak1.mfm
+2025-09-29 21:06:06,269 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.visual
+2025-09-29 21:06:06,269 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.model
+2025-09-29 21:06:06,273 BigWorldExporter INFO: 导出清单已生成: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\export_manifest.txt
+2025-09-29 21:06:06,273 BigWorldExporter INFO: 导出完成 Export finished
+2025-09-29 21:06:42,227 BigWorldExporter INFO: Processing animation: Stand (ID 0 variation 0) for object: humanfemale
+2025-09-29 21:06:42,227 BigWorldExporter ERROR: No armature found for animated object: humanfemale
+2025-09-29 21:06:42,228 animation_format INFO: Exporting animation file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\animations\humanfemale.animation
+2025-09-29 21:06:42,228 operators ERROR: Animation export failed: 'NoneType' object is not subscriptable
+2025-09-29 22:43:12,957 bigworld_exporter INFO: Unregistering BigWorld Exporter addon...
+2025-09-29 22:43:12,958 bigworld_exporter INFO: BigWorld Exporter addon unregistered
+2025-09-29 22:43:13,689 bigworld_exporter INFO: Registering BigWorld Exporter addon...
+2025-09-29 22:43:13,690 bigworld_exporter INFO: BigWorld Exporter addon registered successfully
+2025-09-29 22:43:22,035 operators INFO: Starting model export...
+2025-09-29 22:43:22,035 BigWorldExporter INFO: 开始导出流程 Start export process
+2025-09-29 22:43:22,035 BigWorldExporter INFO: 收集数据 Collecting data
+2025-09-29 22:43:22,035 BigWorldExporter INFO: Processing mesh object: humanfemale
+2025-09-29 22:43:22,035 BigWorldExporter ERROR: Mesh validation failed for humanfemale: 对象没有网格数据 (Object has no mesh data)
+2025-09-29 22:43:22,035 BigWorldExporter INFO: Processing materials for object: humanfemale
+2025-09-29 22:43:22,035 BigWorldExporter INFO: Processing mesh object: humanfemale_Geoset0
+2025-09-29 22:43:22,138 BigWorldExporter INFO: Processed 2016 vertices and 2016 indices for humanfemale_Geoset0
+2025-09-29 22:43:22,138 BigWorldExporter INFO: Processing materials for object: humanfemale_Geoset0
+2025-09-29 22:43:22,138 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:43:22,138 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:43:22,138 BigWorldExporter INFO: Processing mesh object: humanfemale_Geoset1
+2025-09-29 22:43:22,138 BigWorldExporter INFO: Processed 12 vertices and 12 indices for humanfemale_Geoset1
+2025-09-29 22:43:22,138 BigWorldExporter INFO: Processing materials for object: humanfemale_Geoset1
+2025-09-29 22:43:22,149 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:43:22,149 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:43:22,149 BigWorldExporter INFO: Processing mesh object: humanfemale_Hair16
+2025-09-29 22:43:22,158 BigWorldExporter INFO: Processed 561 vertices and 561 indices for humanfemale_Hair16
+2025-09-29 22:43:22,158 BigWorldExporter INFO: Processing materials for object: humanfemale_Hair16
+2025-09-29 22:43:22,158 BigWorldExporter INFO: Copied texture: data-6.png
+2025-09-29 22:43:22,158 BigWorldExporter INFO: Processed material: data-6 with 1 textures
+2025-09-29 22:43:22,158 BigWorldExporter INFO: Processing mesh object: humanfemale_FacialC2
+2025-09-29 22:43:22,168 BigWorldExporter INFO: Processed 96 vertices and 96 indices for humanfemale_FacialC2
+2025-09-29 22:43:22,168 BigWorldExporter INFO: Processing materials for object: humanfemale_FacialC2
+2025-09-29 22:43:22,170 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:43:22,170 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:43:22,170 BigWorldExporter INFO: Processing mesh object: humanfemale_Gloves1
+2025-09-29 22:43:22,179 BigWorldExporter INFO: Processed 216 vertices and 216 indices for humanfemale_Gloves1
+2025-09-29 22:43:22,179 BigWorldExporter INFO: Processing materials for object: humanfemale_Gloves1
+2025-09-29 22:43:22,179 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:43:22,179 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:43:22,179 BigWorldExporter INFO: Processing mesh object: humanfemale_Boots1
+2025-09-29 22:43:22,215 BigWorldExporter INFO: Processed 390 vertices and 390 indices for humanfemale_Boots1
+2025-09-29 22:43:22,215 BigWorldExporter INFO: Processing materials for object: humanfemale_Boots1
+2025-09-29 22:43:22,217 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:43:22,217 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:43:22,217 BigWorldExporter INFO: Processing mesh object: humanfemale_Ears1
+2025-09-29 22:43:22,217 BigWorldExporter INFO: Processed 18 vertices and 18 indices for humanfemale_Ears1
+2025-09-29 22:43:22,217 BigWorldExporter INFO: Processing materials for object: humanfemale_Ears1
+2025-09-29 22:43:22,222 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:43:22,222 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:43:22,222 BigWorldExporter INFO: Processing mesh object: humanfemale_Trousers1
+2025-09-29 22:43:22,267 BigWorldExporter INFO: Processed 414 vertices and 414 indices for humanfemale_Trousers1
+2025-09-29 22:43:22,267 BigWorldExporter INFO: Processing materials for object: humanfemale_Trousers1
+2025-09-29 22:43:22,268 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:43:22,268 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:43:22,268 BigWorldExporter INFO: Processing mesh object: humanfemale_Cloak1
+2025-09-29 22:43:22,268 BigWorldExporter INFO: Processed 42 vertices and 42 indices for humanfemale_Cloak1
+2025-09-29 22:43:22,268 BigWorldExporter INFO: Processing materials for object: humanfemale_Cloak1
+2025-09-29 22:43:22,268 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:43:22,268 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:43:22,268 BigWorldExporter INFO: Processing animation: Stand (ID 0 variation 0) for object: humanfemale
+2025-09-29 22:43:22,268 BigWorldExporter ERROR: No armature found for animated object: humanfemale
+2025-09-29 22:43:22,268 BigWorldExporter INFO: 验证数据 Validating data
+2025-09-29 22:43:22,268 BigWorldExporter INFO: 写入文件 Writing files
+2025-09-29 22:43:22,277 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.primitives
+2025-09-29 22:43:22,277 primitives_format INFO: Index format: uint16 (2 bytes), count=2016
+2025-09-29 22:43:22,277 primitives_format INFO: Writing 2016 vertices in STANDARD format
+2025-09-29 22:43:22,297 primitives_format INFO: Writing 2016 indices, format=<H
+2025-09-29 22:43:22,300 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Geoset0.mfm
+2025-09-29 22:43:22,300 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.visual
+2025-09-29 22:43:22,300 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.model
+2025-09-29 22:43:22,300 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.primitives
+2025-09-29 22:43:22,300 primitives_format INFO: Index format: uint16 (2 bytes), count=12
+2025-09-29 22:43:22,300 primitives_format INFO: Writing 12 vertices in STANDARD format
+2025-09-29 22:43:22,300 primitives_format INFO: Writing 12 indices, format=<H
+2025-09-29 22:43:22,300 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Geoset1.mfm
+2025-09-29 22:43:22,300 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.visual
+2025-09-29 22:43:22,300 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.model
+2025-09-29 22:43:22,300 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.primitives
+2025-09-29 22:43:22,305 primitives_format INFO: Index format: uint16 (2 bytes), count=561
+2025-09-29 22:43:22,305 primitives_format INFO: Writing 561 vertices in STANDARD format
+2025-09-29 22:43:22,311 primitives_format INFO: Writing 561 indices, format=<H
+2025-09-29 22:43:22,311 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Hair16.mfm
+2025-09-29 22:43:22,311 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.visual
+2025-09-29 22:43:22,311 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.model
+2025-09-29 22:43:22,311 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.primitives
+2025-09-29 22:43:22,311 primitives_format INFO: Index format: uint16 (2 bytes), count=96
+2025-09-29 22:43:22,311 primitives_format INFO: Writing 96 vertices in STANDARD format
+2025-09-29 22:43:22,316 primitives_format INFO: Writing 96 indices, format=<H
+2025-09-29 22:43:22,316 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_FacialC2.mfm
+2025-09-29 22:43:22,316 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.visual
+2025-09-29 22:43:22,317 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.model
+2025-09-29 22:43:22,317 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.primitives
+2025-09-29 22:43:22,317 primitives_format INFO: Index format: uint16 (2 bytes), count=216
+2025-09-29 22:43:22,317 primitives_format INFO: Writing 216 vertices in STANDARD format
+2025-09-29 22:43:22,321 primitives_format INFO: Writing 216 indices, format=<H
+2025-09-29 22:43:22,321 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Gloves1.mfm
+2025-09-29 22:43:22,321 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.visual
+2025-09-29 22:43:22,321 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.model
+2025-09-29 22:43:22,321 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.primitives
+2025-09-29 22:43:22,321 primitives_format INFO: Index format: uint16 (2 bytes), count=390
+2025-09-29 22:43:22,321 primitives_format INFO: Writing 390 vertices in STANDARD format
+2025-09-29 22:43:22,328 primitives_format INFO: Writing 390 indices, format=<H
+2025-09-29 22:43:22,328 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Boots1.mfm
+2025-09-29 22:43:22,328 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.visual
+2025-09-29 22:43:22,330 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.model
+2025-09-29 22:43:22,330 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.primitives
+2025-09-29 22:43:22,330 primitives_format INFO: Index format: uint16 (2 bytes), count=18
+2025-09-29 22:43:22,330 primitives_format INFO: Writing 18 vertices in STANDARD format
+2025-09-29 22:43:22,331 primitives_format INFO: Writing 18 indices, format=<H
+2025-09-29 22:43:22,331 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Ears1.mfm
+2025-09-29 22:43:22,331 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.visual
+2025-09-29 22:43:22,331 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.model
+2025-09-29 22:43:22,331 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.primitives
+2025-09-29 22:43:22,331 primitives_format INFO: Index format: uint16 (2 bytes), count=414
+2025-09-29 22:43:22,331 primitives_format INFO: Writing 414 vertices in STANDARD format
+2025-09-29 22:43:22,338 primitives_format INFO: Writing 414 indices, format=<H
+2025-09-29 22:43:22,338 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Trousers1.mfm
+2025-09-29 22:43:22,338 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.visual
+2025-09-29 22:43:22,338 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.model
+2025-09-29 22:43:22,338 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.primitives
+2025-09-29 22:43:22,338 primitives_format INFO: Index format: uint16 (2 bytes), count=42
+2025-09-29 22:43:22,338 primitives_format INFO: Writing 42 vertices in STANDARD format
+2025-09-29 22:43:22,338 primitives_format INFO: Writing 42 indices, format=<H
+2025-09-29 22:43:22,338 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Cloak1.mfm
+2025-09-29 22:43:22,338 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.visual
+2025-09-29 22:43:22,338 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.model
+2025-09-29 22:43:22,338 BigWorldExporter INFO: 导出清单已生成: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\export_manifest.txt
+2025-09-29 22:43:22,338 BigWorldExporter INFO: 导出完成 Export finished
+2025-09-29 22:43:24,423 BigWorldExporter INFO: Processing animation: Stand (ID 0 variation 0) for object: humanfemale
+2025-09-29 22:43:24,423 BigWorldExporter ERROR: No armature found for animated object: humanfemale
+2025-09-29 22:43:24,423 animation_format INFO: Exporting animation file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\animations\humanfemale.animation
+2025-09-29 22:43:24,424 operators ERROR: Animation export failed: 'NoneType' object is not subscriptable
+2025-09-29 22:43:28,546 bigworld_exporter INFO: Unregistering BigWorld Exporter addon...
+2025-09-29 22:43:28,546 bigworld_exporter INFO: BigWorld Exporter addon unregistered
+2025-09-29 22:47:31,543 bigworld_exporter INFO: Registering BigWorld Exporter addon...
+2025-09-29 22:47:31,544 bigworld_exporter INFO: BigWorld Exporter addon registered successfully
+2025-09-29 22:47:37,435 bigworld_exporter INFO: Unregistering BigWorld Exporter addon...
+2025-09-29 22:47:37,436 bigworld_exporter INFO: BigWorld Exporter addon unregistered
+2025-09-29 22:47:37,829 bigworld_exporter INFO: Registering BigWorld Exporter addon...
+2025-09-29 22:47:37,830 bigworld_exporter INFO: BigWorld Exporter addon registered successfully
+2025-09-29 22:47:50,377 operators INFO: Starting model export...
+2025-09-29 22:47:50,377 BigWorldExporter INFO: 开始导出流程 Start export process
+2025-09-29 22:47:50,377 BigWorldExporter INFO: 收集数据 Collecting data
+2025-09-29 22:47:50,377 BigWorldExporter INFO: Processing mesh object: humanfemale
+2025-09-29 22:47:50,377 BigWorldExporter ERROR: Mesh validation failed for humanfemale: 对象没有网格数据 (Object has no mesh data)
+2025-09-29 22:47:50,377 BigWorldExporter INFO: Processing materials for object: humanfemale
+2025-09-29 22:47:50,377 BigWorldExporter INFO: Processing mesh object: humanfemale_Geoset0
+2025-09-29 22:47:50,478 BigWorldExporter INFO: Processed 2016 vertices and 2016 indices for humanfemale_Geoset0
+2025-09-29 22:47:50,478 BigWorldExporter INFO: Processing materials for object: humanfemale_Geoset0
+2025-09-29 22:47:50,480 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:47:50,480 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:47:50,480 BigWorldExporter INFO: Processing mesh object: humanfemale_Geoset1
+2025-09-29 22:47:50,481 BigWorldExporter INFO: Processed 12 vertices and 12 indices for humanfemale_Geoset1
+2025-09-29 22:47:50,481 BigWorldExporter INFO: Processing materials for object: humanfemale_Geoset1
+2025-09-29 22:47:50,489 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:47:50,489 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:47:50,489 BigWorldExporter INFO: Processing mesh object: humanfemale_Hair16
+2025-09-29 22:47:50,503 BigWorldExporter INFO: Processed 561 vertices and 561 indices for humanfemale_Hair16
+2025-09-29 22:47:50,503 BigWorldExporter INFO: Processing materials for object: humanfemale_Hair16
+2025-09-29 22:47:50,504 BigWorldExporter INFO: Copied texture: data-6.png
+2025-09-29 22:47:50,504 BigWorldExporter INFO: Processed material: data-6 with 1 textures
+2025-09-29 22:47:50,504 BigWorldExporter INFO: Processing mesh object: humanfemale_FacialC2
+2025-09-29 22:47:50,507 BigWorldExporter INFO: Processed 96 vertices and 96 indices for humanfemale_FacialC2
+2025-09-29 22:47:50,507 BigWorldExporter INFO: Processing materials for object: humanfemale_FacialC2
+2025-09-29 22:47:50,509 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:47:50,509 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:47:50,510 BigWorldExporter INFO: Processing mesh object: humanfemale_Gloves1
+2025-09-29 22:47:50,521 BigWorldExporter INFO: Processed 216 vertices and 216 indices for humanfemale_Gloves1
+2025-09-29 22:47:50,521 BigWorldExporter INFO: Processing materials for object: humanfemale_Gloves1
+2025-09-29 22:47:50,522 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:47:50,522 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:47:50,522 BigWorldExporter INFO: Processing mesh object: humanfemale_Boots1
+2025-09-29 22:47:50,556 BigWorldExporter INFO: Processed 390 vertices and 390 indices for humanfemale_Boots1
+2025-09-29 22:47:50,556 BigWorldExporter INFO: Processing materials for object: humanfemale_Boots1
+2025-09-29 22:47:50,557 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:47:50,557 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:47:50,557 BigWorldExporter INFO: Processing mesh object: humanfemale_Ears1
+2025-09-29 22:47:50,558 BigWorldExporter INFO: Processed 18 vertices and 18 indices for humanfemale_Ears1
+2025-09-29 22:47:50,558 BigWorldExporter INFO: Processing materials for object: humanfemale_Ears1
+2025-09-29 22:47:50,565 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:47:50,565 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:47:50,566 BigWorldExporter INFO: Processing mesh object: humanfemale_Trousers1
+2025-09-29 22:47:50,607 BigWorldExporter INFO: Processed 414 vertices and 414 indices for humanfemale_Trousers1
+2025-09-29 22:47:50,607 BigWorldExporter INFO: Processing materials for object: humanfemale_Trousers1
+2025-09-29 22:47:50,608 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:47:50,608 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:47:50,608 BigWorldExporter INFO: Processing mesh object: humanfemale_Cloak1
+2025-09-29 22:47:50,610 BigWorldExporter INFO: Processed 42 vertices and 42 indices for humanfemale_Cloak1
+2025-09-29 22:47:50,611 BigWorldExporter INFO: Processing materials for object: humanfemale_Cloak1
+2025-09-29 22:47:50,616 BigWorldExporter INFO: Copied texture: data-1.png
+2025-09-29 22:47:50,616 BigWorldExporter INFO: Processed material: data-1 with 1 textures
+2025-09-29 22:47:50,617 BigWorldExporter INFO: Processing animation: Stand (ID 0 variation 0) for object: humanfemale
+2025-09-29 22:47:50,617 BigWorldExporter ERROR: No armature found for animated object: humanfemale
+2025-09-29 22:47:50,617 BigWorldExporter INFO: 验证数据 Validating data
+2025-09-29 22:47:50,617 BigWorldExporter INFO: 写入文件 Writing files
+2025-09-29 22:47:50,635 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.primitives
+2025-09-29 22:47:50,635 primitives_format INFO: Index format: uint16 (2 bytes), count=2016
+2025-09-29 22:47:50,635 primitives_format INFO: Writing 2016 vertices in STANDARD format
+2025-09-29 22:47:50,657 primitives_format INFO: Writing 2016 indices, format=<H
+2025-09-29 22:47:50,657 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Geoset0.mfm
+2025-09-29 22:47:50,658 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.visual
+2025-09-29 22:47:50,658 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset0.model
+2025-09-29 22:47:50,659 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.primitives
+2025-09-29 22:47:50,659 primitives_format INFO: Index format: uint16 (2 bytes), count=12
+2025-09-29 22:47:50,659 primitives_format INFO: Writing 12 vertices in STANDARD format
+2025-09-29 22:47:50,660 primitives_format INFO: Writing 12 indices, format=<H
+2025-09-29 22:47:50,660 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Geoset1.mfm
+2025-09-29 22:47:50,660 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.visual
+2025-09-29 22:47:50,661 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Geoset1.model
+2025-09-29 22:47:50,661 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.primitives
+2025-09-29 22:47:50,661 primitives_format INFO: Index format: uint16 (2 bytes), count=561
+2025-09-29 22:47:50,662 primitives_format INFO: Writing 561 vertices in STANDARD format
+2025-09-29 22:47:50,667 primitives_format INFO: Writing 561 indices, format=<H
+2025-09-29 22:47:50,668 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Hair16.mfm
+2025-09-29 22:47:50,668 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.visual
+2025-09-29 22:47:50,669 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Hair16.model
+2025-09-29 22:47:50,669 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.primitives
+2025-09-29 22:47:50,669 primitives_format INFO: Index format: uint16 (2 bytes), count=96
+2025-09-29 22:47:50,670 primitives_format INFO: Writing 96 vertices in STANDARD format
+2025-09-29 22:47:50,672 primitives_format INFO: Writing 96 indices, format=<H
+2025-09-29 22:47:50,672 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_FacialC2.mfm
+2025-09-29 22:47:50,672 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.visual
+2025-09-29 22:47:50,672 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_FacialC2.model
+2025-09-29 22:47:50,673 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.primitives
+2025-09-29 22:47:50,673 primitives_format INFO: Index format: uint16 (2 bytes), count=216
+2025-09-29 22:47:50,674 primitives_format INFO: Writing 216 vertices in STANDARD format
+2025-09-29 22:47:50,676 primitives_format INFO: Writing 216 indices, format=<H
+2025-09-29 22:47:50,677 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Gloves1.mfm
+2025-09-29 22:47:50,677 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.visual
+2025-09-29 22:47:50,678 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Gloves1.model
+2025-09-29 22:47:50,679 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.primitives
+2025-09-29 22:47:50,679 primitives_format INFO: Index format: uint16 (2 bytes), count=390
+2025-09-29 22:47:50,679 primitives_format INFO: Writing 390 vertices in STANDARD format
+2025-09-29 22:47:50,683 primitives_format INFO: Writing 390 indices, format=<H
+2025-09-29 22:47:50,684 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Boots1.mfm
+2025-09-29 22:47:50,684 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.visual
+2025-09-29 22:47:50,685 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Boots1.model
+2025-09-29 22:47:50,685 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.primitives
+2025-09-29 22:47:50,685 primitives_format INFO: Index format: uint16 (2 bytes), count=18
+2025-09-29 22:47:50,685 primitives_format INFO: Writing 18 vertices in STANDARD format
+2025-09-29 22:47:50,685 primitives_format INFO: Writing 18 indices, format=<H
+2025-09-29 22:47:50,686 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Ears1.mfm
+2025-09-29 22:47:50,686 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.visual
+2025-09-29 22:47:50,687 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Ears1.model
+2025-09-29 22:47:50,688 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.primitives
+2025-09-29 22:47:50,688 primitives_format INFO: Index format: uint16 (2 bytes), count=414
+2025-09-29 22:47:50,688 primitives_format INFO: Writing 414 vertices in STANDARD format
+2025-09-29 22:47:50,693 primitives_format INFO: Writing 414 indices, format=<H
+2025-09-29 22:47:50,693 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Trousers1.mfm
+2025-09-29 22:47:50,694 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.visual
+2025-09-29 22:47:50,694 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Trousers1.model
+2025-09-29 22:47:50,695 primitives_format INFO: Exporting primitives file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.primitives
+2025-09-29 22:47:50,695 primitives_format INFO: Index format: uint16 (2 bytes), count=42
+2025-09-29 22:47:50,695 primitives_format INFO: Writing 42 vertices in STANDARD format
+2025-09-29 22:47:50,696 primitives_format INFO: Writing 42 indices, format=<H
+2025-09-29 22:47:50,696 material_format INFO: Exporting material file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\materials/humanfemale_Cloak1.mfm
+2025-09-29 22:47:50,697 visual_format INFO: Exporting visual file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.visual
+2025-09-29 22:47:50,697 model_format INFO: Exporting model file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\models/humanfemale_Cloak1.model
+2025-09-29 22:47:50,700 BigWorldExporter INFO: 导出清单已生成: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\export_manifest.txt
+2025-09-29 22:47:50,700 BigWorldExporter INFO: 导出完成 Export finished
+2025-09-29 22:47:52,790 BigWorldExporter INFO: Processing animation: Stand (ID 0 variation 0) for object: humanfemale
+2025-09-29 22:47:52,790 BigWorldExporter ERROR: No armature found for animated object: humanfemale
+2025-09-29 22:47:52,790 animation_format INFO: Exporting animation file: D:\BwGameWork\BigWorld2.0andsever\BigWorld2.0\BigWorld\fantasydemo\res\characters\humanfemale\animations\humanfemale.animation
+2025-09-29 22:47:52,791 operators ERROR: Animation export failed: 'NoneType' object is not subscriptable
+2025-09-29 22:49:06,957 bigworld_exporter INFO: Unregistering BigWorld Exporter addon...
+2025-09-29 22:49:06,957 bigworld_exporter INFO: BigWorld Exporter addon unregistered
