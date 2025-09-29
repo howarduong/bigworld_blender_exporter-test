@@ -63,17 +63,22 @@ class BigWorldExporter:
         logger.info("收集网格和材质 Collecting meshes/materials")
         mesh_collector = MeshCollector()
         mat_collector = MaterialCollector()
+        count_mesh = 0
+        count_mat = 0
         for obj in self._get_objects():
             if self.settings.export_mesh and obj.type == 'MESH':
                 mesh = mesh_collector.collect(obj, self.settings)
                 if mesh:
                     self.mesh_data[obj.name] = mesh
+                    count_mesh += 1
                 else:
                     logger.warning(f"MeshCollector returned None for {obj.name}")
             if self.settings.export_materials:
                 mats = mat_collector.collect(obj, self.settings)
                 if mats:
                     self.material_data[obj.name] = mats
+                    count_mat += len(mats)
+        logger.info(f"Collected {count_mesh} meshes, {count_mat} materials")
 
     def write_model_files(self):
         logger.info("写入模型文件 Writing model files")
@@ -82,6 +87,11 @@ class BigWorldExporter:
         mats_dir = os.path.join(export_root, MATERIALS_SUBFOLDER)
         os.makedirs(models_dir, exist_ok=True)
         os.makedirs(mats_dir, exist_ok=True)
+
+        if not self.mesh_data:
+            logger.warning("No mesh data collected, nothing to export")
+            self.report_lines.append("WARNING: No mesh data collected")
+            return
 
         for obj_name, mesh in self.mesh_data.items():
             try:
@@ -92,6 +102,7 @@ class BigWorldExporter:
                 primitives_path = os.path.join(export_root, primitives_path_rel)
                 vertices = mesh.get("vertices", [])
                 indices = mesh.get("indices", [])
+                logger.info(f"Writing primitives for {obj_name}: {len(vertices)} verts, {len(indices)//3} tris")
                 primitives_format.export_primitives_file(
                     primitives_path, vertices, indices, getattr(self.settings, "vertex_format", "STANDARD")
                 )
@@ -156,12 +167,14 @@ class BigWorldExporter:
     def collect_animations(self):
         logger.info("收集动画 Collecting animations")
         anim_collector = AnimationCollector()
+        count_anim = 0
         for obj in self._get_objects():
             if self.settings.export_animation and obj.animation_data:
                 if obj.animation_data.action:
                     anim = anim_collector.collect(obj, obj.animation_data.action, self.settings)
                     if anim:
                         self.animation_data[f"{obj.name}_{obj.animation_data.action.name}"] = anim
+                        count_anim += 1
                 if obj.animation_data.nla_tracks:
                     for track in obj.animation_data.nla_tracks:
                         for strip in track.strips:
@@ -169,12 +182,19 @@ class BigWorldExporter:
                                 anim = anim_collector.collect(obj, strip.action, self.settings)
                                 if anim:
                                     self.animation_data[f"{obj.name}_{strip.action.name}"] = anim
+                                    count_anim += 1
+        logger.info(f"Collected {count_anim} animations")
 
     def write_animation_files(self):
         logger.info("写入动画文件 Writing animation files")
         export_root = bpy.path.abspath(self.settings.export_path or ".")
         anims_dir = os.path.join(export_root, ANIMATIONS_SUBFOLDER)
         os.makedirs(anims_dir, exist_ok=True)
+
+        if not self.animation_data:
+            logger.warning("No animation data collected, nothing to export")
+            self.report_lines.append("WARNING: No animation data collected")
+            return
 
         for anim_name, anim in self.animation_data.items():
             try:
