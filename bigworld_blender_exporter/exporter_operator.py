@@ -5,10 +5,9 @@ from datetime import datetime
 
 from .config_utils import get_config
 from .logger import setup_logger
-from .path_utils import ensure_dir, normalize_path
+from .path_utils import ensure_dir, normalize_path, exists_case_sensitive
 from .fx_checker import resolve_fx_for_material
 from .textures import export_image
-from .primitives_writer import write_primitives_for_object
 from .primitives_binary_writer import write_primitives_binary
 from .visual_writer import write_visual_for_object
 from .model_writer import write_model_for_object
@@ -45,8 +44,10 @@ def create_tmp_dir():
     ensure_dir(out)
     return out
 
-def _case_exists(base_tmp_res, relpath):
+def _case_exists(base_tmp_res, relpath, strict=False):
     full = os.path.normpath(os.path.join(base_tmp_res, relpath))
+    if strict:
+        return exists_case_sensitive(full), full
     return os.path.exists(full), full
 
 class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
@@ -57,7 +58,7 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
     def execute(self, context):
         config = get_config()
         LOG.info("开始导出 BigWorld 模型")
-        LOG.info(f"配置: unitScale={config.get('unitScale')} res_root={config.get('res_root')} default_fx={config.get('default_fx')} normal_mapped={config.get('normal_mapped')} primitives_binary={config.get('primitives_binary')} prefer_dds={config.get('prefer_dds')}")
+        LOG.info(f"配置: unitScale={config.get('unitScale')} res_root={config.get('res_root')} default_fx={config.get('default_fx')} normal_mapped={config.get('normal_mapped')} primitives_binary={config.get('primitives_binary')} prefer_dds={config.get('prefer_dds')} max_uv_layers={config.get('max_uv_layers')} force_static_hierarchy={config.get('force_static_hierarchy')}")
 
         checks = preflight_check(context.scene, config)
         for k, lst in checks.items():
@@ -80,11 +81,7 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
         res_root_abs = os.path.abspath(config.get("res_root", "res"))
         fx_map = {}
         material_fx_map = {}
-        prefer_dds = False
-        try:
-            prefer_dds = config.getboolean("prefer_dds")
-        except Exception:
-            prefer_dds = False
+        prefer_dds = bool(config.getboolean("prefer_dds"))
 
         for idx, mat in enumerate(bpy.data.materials):
             fx_hint = getattr(mat, "bigworld_fx", "") if hasattr(mat, "bigworld_fx") else ""
@@ -115,15 +112,10 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
             json.dump(fx_map, f, indent=2, ensure_ascii=False)
 
         exported = []
-        try:
-            normal_mapped_flag = config.getboolean("normal_mapped")
-        except Exception:
-            normal_mapped_flag = True
-        try:
-            primitives_binary_flag = config.getboolean("primitives_binary")
-        except Exception:
-            primitives_binary_flag = True
+        normal_mapped_flag = bool(config.getboolean("normal_mapped"))
         max_uv_layers = int(config.get("max_uv_layers", 2))
+        force_static_hierarchy = bool(config.getboolean("force_static_hierarchy"))
+        strict_case = bool(config.getboolean("strict_case_check"))
 
         for obj in context.selected_objects:
             if obj.type != 'MESH':
@@ -131,24 +123,18 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
                 continue
             LOG.info(f"导出对象: {obj.name}")
 
-            # primitives 二选一
-            if primitives_binary_flag:
-                primitives_meta = write_primitives_binary(
-                    obj, tmp_res_root, rel_primitives_dir="primitives",
-                    config={"normal_mapped": normal_mapped_flag, "max_uv_layers": max_uv_layers}
-                )
-            else:
-                primitives_meta = write_primitives_for_object(
-                    obj, tmp_res_root, rel_primitives_dir="primitives",
-                    config={"normal_mapped": normal_mapped_flag, "max_uv_layers": max_uv_layers}
-                )
-
+            primitives_meta = write_primitives_binary(
+                obj, tmp_res_root, rel_primitives_dir="primitives",
+                config={"normal_mapped": normal_mapped_flag, "max_uv_layers": max_uv_layers}
+            )
             visual_rel = write_visual_for_object(
                 obj, primitives_meta, material_fx_map, tmp_res_root,
                 rel_visual_dir="visuals",
                 materialKind=int(config.get("materialKind", 0)),
-                collisionFlags=int(config.get("collisionFlags", 0))
+                collisionFlags=int(config.get("collisionFlags", 0)),
+                force_static_hierarchy=force_static_hierarchy
             )
+            # materialNames：按 slots 顺序（以 material_fx_map 的 key 排序）
             mat_names = [material_fx_map.get(i, {}).get("name", f"mat_{i}") for i in range(len(material_fx_map))]
             model_rel = write_model_for_object(
                 obj, visual_rel, tmp_res_root, rel_model_dir="models",
@@ -173,15 +159,11 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
         errors = []
         for em in exported:
             pm = em["primitives"]
-            # 二进制：pm['file']；明文：pm['vertices_file'] / pm['indices_file']
-            if "file" in pm and pm["file"]:
-                needed = [pm["file"], em["visual"], em["model"]]
-            else:
-                needed = [pm["vertices_file"], pm["indices_file"], em["visual"], em["model"]]
+            needed = [pm["file"], em["visual"], em["model"]]
             for rel in needed:
-                ok, full = _case_exists(tmp_res_root, rel)
+                ok, full = _case_exists(tmp_res_root, rel, strict=strict_case)
                 if not ok:
-                    errors.append(f"缺失文件: {full}")
+                    errors.append(f"缺失或大小写不匹配: {full}")
 
         if errors:
             for e in errors:
