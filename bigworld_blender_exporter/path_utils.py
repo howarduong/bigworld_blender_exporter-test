@@ -1,5 +1,4 @@
 import os
-import fnmatch
 
 def normalize_path(p: str) -> str:
     if not p:
@@ -14,13 +13,8 @@ def exists_case_sensitive(path: str) -> bool:
     if not os.path.exists(path):
         return False
     parts = path.split(os.sep)
-    if path.startswith(os.sep):
-        cur = os.sep
-        start = 1
-    else:
-        cur = parts[0]
-        start = 1
-    for part in parts[start:]:
+    cur = parts[0]
+    for part in parts[1:]:
         try:
             items = os.listdir(cur)
         except Exception:
@@ -29,6 +23,9 @@ def exists_case_sensitive(path: str) -> bool:
             return False
         cur = os.path.join(cur, part)
     return True
+
+def ensure_dir(path: str):
+    os.makedirs(path, exist_ok=True)
 
 def find_fx_candidates(res_root: str, fx_name: str, search_dirs=None):
     fx_name = normalize_path(fx_name or "")
@@ -57,14 +54,7 @@ def find_fx_candidates(res_root: str, fx_name: str, search_dirs=None):
             for f in files:
                 if f.lower() == basename.lower():
                     rel = os.path.relpath(os.path.join(root, f), res_root)
-                    candidates.append(normalize_path(rel))
-    # 去重
-    out, seen = [], set()
-    for c in candidates:
-        if c not in seen:
-            seen.add(c)
-            out.append(c)
-    return out
-
-def ensure_dir(path: str):
-    os.makedirs(path, exist_ok=True)
+                    rel = normalize_path(rel)
+                    if rel not in candidates:
+                        candidates.append(rel)
+    return candidates
