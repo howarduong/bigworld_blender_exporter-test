@@ -1,5 +1,5 @@
 # 文件位置: bigworld_blender_exporter/formats/primitives_format.py
-# Primitives file format for BigWorld export
+# Primitives file format for BigWorld export (改进版)
 
 import os
 import struct
@@ -11,15 +11,37 @@ from ..utils.math_utils import compress_normal, compress_tangent, compress_binor
 logger = get_logger("primitives_format")
 
 
+def _normalize_vertex(v):
+    """兼容 tuple/list/dict 顶点，统一转成 dict"""
+    if isinstance(v, dict):
+        return v
+    elif isinstance(v, (list, tuple)):
+        x = float(v[0]) if len(v) > 0 else 0.0
+        y = float(v[1]) if len(v) > 1 else 0.0
+        z = float(v[2]) if len(v) > 2 else 0.0
+        return {
+            "position": (x, y, z),
+            "normal": (0.0, 0.0, 1.0),
+            "uv": (0.0, 0.0),
+            "bone_indices": [0, 0, 0],
+            "bone_weights": [1.0, 0.0],
+            "tangent": (1.0, 0.0, 0.0),
+            "binormal": (0.0, 1.0, 0.0),
+        }
+    else:
+        raise TypeError(f"Unsupported vertex type: {type(v)}")
+
+
 def export_primitives_file(filepath, vertices, indices, vertex_format='STANDARD'):
-    """
-    Export vertex and index data to BigWorld .primitives file
-    """
+    """Export vertex and index data to BigWorld .primitives file"""
     try:
         logger.info(f"Exporting primitives file: {filepath}")
         create_directory(filepath)
 
-        # Determine vertex size from packing
+        # Normalize vertices
+        vertices = [_normalize_vertex(v) for v in vertices]
+
+        # Determine vertex size
         vertex_size = 0
         if vertices:
             vertex_size = len(pack_vertex_data(vertices[0], vertex_format))
@@ -40,24 +62,16 @@ def export_primitives_file(filepath, vertices, indices, vertex_format='STANDARD'
 
 
 def write_primitives_header(f, vertices, indices, vertex_size, vertex_format):
-    """Write primitives file header"""
-    # Magic number
     write_uint32(f, PRIMITIVES_MAGIC)
-    # Format string (64 bytes, null-padded)
     fmt_str = VERTEX_FORMATS[vertex_format]['format'].encode('ascii').ljust(64, b'\0')
     write_bytes(f, fmt_str)
-    # Vertex count
     write_uint32(f, len(vertices))
-    # Index count
     write_uint32(f, len(indices))
-    # Vertex size in bytes
     write_uint32(f, vertex_size)
-    # Padding to align to 16-byte boundary
     f.write(b'\0' * 4)
 
 
 def write_vertex_buffer(f, vertices, vertex_format):
-    """Write vertex buffer data"""
     logger.info(f"Writing {len(vertices)} vertices in {vertex_format} format")
     for vertex in vertices:
         packed = pack_vertex_data(vertex, vertex_format)
@@ -65,7 +79,6 @@ def write_vertex_buffer(f, vertices, vertex_format):
 
 
 def write_index_buffer(f, indices, vertex_count):
-    """Write index buffer data"""
     logger.info(f"Writing {len(indices)} indices")
     use_32bit = vertex_count > 65535
     for index in indices:
@@ -76,7 +89,6 @@ def write_index_buffer(f, indices, vertex_count):
 
 
 def pack_vertex_data(vertex_data, format_type='STANDARD'):
-    """Pack vertex data according to BigWorld format"""
     if format_type == 'SIMPLE':
         return pack_simple_vertex(vertex_data)
     elif format_type == 'SKINNED':
@@ -86,31 +98,24 @@ def pack_vertex_data(vertex_data, format_type='STANDARD'):
 
 
 def pack_simple_vertex(v):
-    """Pack simple vertex format: xyznuv"""
     data = bytearray()
-    # Position
     pos = v['position']
     data.extend(struct.pack('<fff', *pos))
-    # Normal (compressed short2)
     data.extend(compress_normal(v['normal']))
-    # UV
     uv = v['uv']
     data.extend(struct.pack('<ff', *uv))
     return bytes(data)
 
 
 def pack_skinned_vertex(v):
-    """Pack skinned vertex format: xyznuviiiww"""
     data = bytearray()
     pos = v['position']
     data.extend(struct.pack('<fff', *pos))
     data.extend(compress_normal(v['normal']))
     uv = v['uv']
     data.extend(struct.pack('<ff', *uv))
-    # Bone indices
     bi = v.get('bone_indices', [0, 0, 0])
     data.extend(struct.pack('<BBB', *bi))
-    # Bone weights
     bw = v.get('bone_weights', [1.0, 0.0])
     w1 = int(bw[0] * 255)
     w2 = int(bw[1] * 255)
@@ -119,7 +124,6 @@ def pack_skinned_vertex(v):
 
 
 def pack_standard_vertex(v):
-    """Pack standard vertex format: xyznuviiiwwtb"""
     data = bytearray()
     pos = v['position']
     data.extend(struct.pack('<fff', *pos))
