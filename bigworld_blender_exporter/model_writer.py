@@ -11,6 +11,7 @@ def write_model_for_object(obj, visual_rel_path, tmp_res_root, rel_model_dir="mo
     model_path = os.path.join(out_dir, model_name)
     LOG.info(f"[model] write {model_path}")
     visual_base = os.path.splitext(os.path.basename(visual_rel_path))[0]
+
     bb_min = bounding_box["min"] if bounding_box else (-1,-1,-1)
     bb_max = bounding_box["max"] if bounding_box else (1,1,1)
     names = material_names or []
@@ -33,7 +34,10 @@ def write_model_for_object(obj, visual_rel_path, tmp_res_root, rel_model_dir="mo
         for n in names:
             mf.write(f"    {n}\n")
         mf.write("  endmaterialNames\n")
-        # 占位：animations/actions
+        # skeleton（占位）
+        mf.write("  skeleton\n")
+        mf.write("  endskeleton\n")
+        # animations / actions 占位
         mf.write("  animations\n")
         mf.write("  endanimations\n")
         mf.write("  actions\n")
