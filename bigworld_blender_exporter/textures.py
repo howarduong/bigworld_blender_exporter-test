@@ -7,29 +7,37 @@ from .logger import setup_logger
 
 LOG = setup_logger()
 
-def _try_texconv(png_path: str, out_dir: str, dds_format="DXT5") -> str:
+def _run_texconv(src_path: str, out_dir: str, dds_format: str, srgb: bool) -> str:
     """
-    使用 texconv 将 png/jpg 转为 dds，返回 dds 路径；失败返回空串。
-    需要系统安装 texconv (Windows) 或 nvtt (跨平台)。
+    调用 texconv 转换为 dds，生成 mipmap。
+    dds_format 示例：DXT5（漫反射），BC5（法线）。
+    srgb: True 为 sRGB（DXT5），False 为 Linear（BC5）。
     """
-    dds_path = os.path.splitext(png_path)[0] + ".dds"
-    cmd = ["texconv", "-f", dds_format, "-o", out_dir, png_path]
     try:
-        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if proc.returncode == 0 and os.path.exists(dds_path):
+        args = ["texconv", "-f", dds_format, "-o", out_dir, "-m", "0", src_path]
+        if srgb:
+            args += ["-srgb"]
+        proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if proc.returncode != 0:
+            LOG.warning(f"[texture] texconv failed: {proc.stderr.strip()}")
+            return ""
+        dds_path = os.path.splitext(src_path)[0] + ".dds"
+        if os.path.exists(dds_path):
             LOG.info(f"[texture] DDS converted: {dds_path}")
             return dds_path
-        else:
-            LOG.warning(f"[texture] texconv failed ({proc.returncode}): {proc.stderr.strip()}")
+        # texconv有时输出到 out_dir，尝试定位
+        dname = os.path.basename(src_path)
+        dds_guess = os.path.join(out_dir, os.path.splitext(dname)[0] + ".dds")
+        return dds_guess if os.path.exists(dds_guess) else ""
     except Exception as e:
         LOG.warning(f"[texture] texconv not available: {e}")
-    return ""
+        return ""
 
 def export_image(image: bpy.types.Image, tmp_res_root: str, res_root: str, prefer_dds=False, color_space="srgb"):
     """
-    导出 Blender Image 到 tmp_res_root/textures，下返回相对res的路径。
-    color_space: "srgb" 或 "linear"（法线贴图推荐linear）
-    prefer_dds: True 时尝试调用 texconv 转 DDS
+    导出 Blender Image 到 tmp_res_root/textures 下，返回相对res的路径。
+    color_space: "srgb"（漫反射）或 "linear"（法线）
+    prefer_dds: True 时尝试转换为 DDS（DXT5/BC5），失败回退 PNG
     """
     if not image:
         return ""
@@ -53,7 +61,10 @@ def export_image(image: bpy.types.Image, tmp_res_root: str, res_root: str, prefe
         return ""
 
     if prefer_dds:
-        dds_path = _try_texconv(out_path, os.path.dirname(out_path), dds_format="DXT5")
+        # sRGB: 漫反射 DXT5；Linear: 法线 BC5
+        is_srgb = (color_space.lower() == "srgb")
+        fmt = "DXT5" if is_srgb else "BC5"
+        dds_path = _run_texconv(out_path, os.path.dirname(out_path), fmt, srgb=is_srgb)
         if dds_path and os.path.exists(dds_path):
             rel = normalize_path(os.path.relpath(dds_path, tmp_res_root))
             return rel
