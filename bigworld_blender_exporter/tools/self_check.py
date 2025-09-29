@@ -5,7 +5,6 @@ def main():
     if not os.path.isdir(base):
         print("未找到 tmp_export 目录")
         return 1
-    # 选择最新时间戳目录
     dirs = [d for d in os.listdir(base) if os.path.isdir(os.path.join(base, d))]
     if not dirs:
         print("tmp_export 下不存在导出目录")
