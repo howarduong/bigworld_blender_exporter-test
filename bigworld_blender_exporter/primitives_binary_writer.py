@@ -5,6 +5,7 @@ import bmesh
 from math import isfinite
 from .path_utils import ensure_dir, normalize_path
 from .logger import setup_logger
+from .config_utils import get_config
 
 LOG = setup_logger()
 
@@ -22,7 +23,7 @@ def _triangulate_eval_mesh(obj):
     bm.free()
     return obj_eval, mesh
 
-def _gather_binary_data(obj, need_tangent=True, max_uv_layers=2):
+def _gather_binary_data(obj, need_tangent=True, max_uv_layers=2, unit_scale=1.0):
     obj_eval, mesh = _triangulate_eval_mesh(obj)
     uv_layers = mesh.uv_layers
     uv_count = min(len(uv_layers), max_uv_layers)
@@ -34,24 +35,27 @@ def _gather_binary_data(obj, need_tangent=True, max_uv_layers=2):
             LOG.warning("calc_tangents failed; fallback without tangent")
             need_tangent = False
 
-    # 收集 UV 层数据引用
     uv_data_layers = [uv_layers[i].data for i in range(uv_count)] if uv_count > 0 else []
 
     verts = []
     vert_map = {}
-    indices = []
-    groups = {}  # midx -> list of tri indices (each tri is 3 ints)
+    groups = {}
 
     for poly in mesh.polygons:
         tri = []
         for li in poly.loop_indices:
             loop = mesh.loops[li]
             v = mesh.vertices[loop.vertex_index]
-            co = (round(_safe_float(v.co.x),6), round(_safe_float(v.co.y),6), round(_safe_float(v.co.z),6))
-            n  = (round(_safe_float(loop.normal.x),6), round(_safe_float(loop.normal.y),6), round(_safe_float(loop.normal.z),6))
+            co = (round(_safe_float(v.co.x * unit_scale),6),
+                  round(_safe_float(v.co.y * unit_scale),6),
+                  round(_safe_float(v.co.z * unit_scale),6))
+            n  = (round(_safe_float(loop.normal.x),6),
+                  round(_safe_float(loop.normal.y),6),
+                  round(_safe_float(loop.normal.z),6))
             uvs = []
             for uv_layer in uv_data_layers:
-                uv = (round(_safe_float(uv_layer[li].uv.x),6), round(_safe_float(uv_layer[li].uv.y),6))
+                uv = (round(_safe_float(uv_layer[li].uv.x),6),
+                      round(_safe_float(uv_layer[li].uv.y),6))
                 uvs.append(uv)
             t = None
             if need_tangent and hasattr(loop, "tangent"):
@@ -69,7 +73,6 @@ def _gather_binary_data(obj, need_tangent=True, max_uv_layers=2):
         midx = poly.material_index
         groups.setdefault(midx, []).extend(tri)
 
-    # 计算 bbox
     xs = [v["co"][0] for v in verts] if verts else [0.0]
     ys = [v["co"][1] for v in verts] if verts else [0.0]
     zs = [v["co"][2] for v in verts] if verts else [0.0]
@@ -77,7 +80,6 @@ def _gather_binary_data(obj, need_tangent=True, max_uv_layers=2):
 
     obj_eval.to_mesh_clear()
 
-    # 汇总
     vcount = len(verts)
     tri_total = sum(len(v) for v in groups.values()) // 3
     icount = tri_total * 3
@@ -93,29 +95,29 @@ def _gather_binary_data(obj, need_tangent=True, max_uv_layers=2):
 
 def write_primitives_binary(obj, tmp_res_root, rel_primitives_dir="primitives", config=None):
     """
-    写出二进制 .primitives 文件，内部结构：
-    [header]
+    二进制 .primitives 写出：严格包含头、组表、顶点缓冲、索引缓冲。
+    头格式（小端）：
       uint32 vertex_count
       uint32 index_count
       uint32 uv_count
-      uint32 need_tangent (0/1)
+      uint32 tangent_flag (0/1)
       uint32 group_count
       group_count * { uint32 material_index, uint32 start_tri, uint32 tri_count }
-    [vertex_buffer]
-      每顶点：float3 pos, float3 normal, (uv_count * float2 uvs), [float4 tangent]
-    [index_buffer]
-      index_format: uint16/uint32 依据 vertex_count
-      顺序：按各组顺序写所有三角形索引
+    顶点：
+      float3 pos, float3 normal, uv_count * float2, [float4 tangent]
+    索引：
+      uint16/uint32（依据 vertex_count）
     """
     if config is None:
         config = {}
     out_dir = os.path.join(tmp_res_root, rel_primitives_dir)
     ensure_dir(out_dir)
 
+    unit_scale = float(get_config().get("unitScale", 1.0))
     need_tangent = bool(config.get("normal_mapped", True))
     max_uv_layers = int(config.get("max_uv_layers", 2))
 
-    data = _gather_binary_data(obj, need_tangent=need_tangent, max_uv_layers=max_uv_layers)
+    data = _gather_binary_data(obj, need_tangent=need_tangent, max_uv_layers=max_uv_layers, unit_scale=unit_scale)
     vcount = data["vertex_count"]
     icount = data["index_count"]
     uv_count = data["uv_count"]
@@ -129,7 +131,7 @@ def write_primitives_binary(obj, tmp_res_root, rel_primitives_dir="primitives", 
     prim_fname = f"{base}.primitives"
     prim_path = os.path.join(out_dir, prim_fname)
 
-    # 构造 group table
+    # 组表构造
     start_tri = 0
     group_table = []
     ordered_groups = []
@@ -171,7 +173,7 @@ def write_primitives_binary(obj, tmp_res_root, rel_primitives_dir="primitives", 
                 f.write(struct.pack(index_fmt, int(c)))
 
     rel = normalize_path(os.path.join(rel_primitives_dir, prim_fname))
-    LOG.info(f"[primitives-binary] {obj.name} v={vcount} i={icount} uv={uv_count} tangent={bool(tangent_flag)} idx16={index_is_16}")
+    LOG.info(f"[primitives-binary] {obj.name} v={vcount} i={icount} uv={uv_count} tangent={bool(tangent_flag)} idx16={index_is_16} unitScale={unit_scale}")
     return {
         "file": rel,
         "vertex_count": vcount,
