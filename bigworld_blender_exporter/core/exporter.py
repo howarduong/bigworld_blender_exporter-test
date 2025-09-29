@@ -21,104 +21,68 @@ class BigWorldExporter:
         self.material_data = {}
         self.report_lines = []
 
-    def export(self):
-        logger.info("开始导出流程 Start export process")
-        self.report_lines.append("=== BigWorld Export Report ===")
+    # -------------------------
+    # 公共方法
+    # -------------------------
+    def _get_objects(self):
+        if self.settings.export_selected and self.context.selected_objects:
+            return self.context.selected_objects
+        return self.context.scene.objects
 
+    def _write_report(self, success=True):
         try:
-            self.collect_data()
-            self.validate()
-            self.write_files()
-            self._write_report(success=True)
-            logger.info("导出完成 Export finished")
+            report_path = bpy.path.abspath(self.settings.report_path or "./export_report.txt")
+            with open(report_path, "w", encoding="utf-8") as f:
+                for line in self.report_lines:
+                    f.write(line + "\n")
+                f.write("\n")
+                f.write("Export SUCCESS\n" if success else "Export FAILED\n")
+            logger.info(f"Report written to {report_path}")
         except Exception as e:
-            logger.error(f"Export failed: {str(e)}")
+            logger.error(f"Failed to write report: {str(e)}")
+
+    # -------------------------
+    # 导出模型
+    # -------------------------
+    def export_models(self):
+        logger.info("开始导出模型 Start model export")
+        self.report_lines.append("=== BigWorld Export Report (Models) ===")
+        try:
+            self.collect_meshes()
+            self.validate()
+            self.write_model_files()
+            self._write_report(success=True)
+            logger.info("模型导出完成 Model export finished")
+        except Exception as e:
+            logger.error(f"Model export failed: {str(e)}")
             self.report_lines.append(f"ERROR: {str(e)}")
             self._write_report(success=False)
             raise
 
-    def collect_data(self):
-        logger.info("收集数据 Collecting data")
-        self.report_lines.append("Collecting data...")
-
-        # 根据设置决定导出范围
-        if self.settings.export_selected and self.context.selected_objects:
-            objects = self.context.selected_objects
-        else:
-            objects = self.context.scene.objects
-
+    def collect_meshes(self):
+        logger.info("收集网格和材质 Collecting meshes/materials")
         mesh_collector = MeshCollector()
-        skeleton_collector = SkeletonCollector()
-        anim_collector = AnimationCollector()
         mat_collector = MaterialCollector()
+        for obj in self._get_objects():
+            if self.settings.export_mesh and obj.type == 'MESH':
+                mesh = mesh_collector.collect(obj, self.settings)
+                if mesh:
+                    self.mesh_data[obj.name] = mesh
+                else:
+                    logger.warning(f"MeshCollector returned None for {obj.name}")
+            if self.settings.export_materials:
+                mats = mat_collector.collect(obj, self.settings)
+                if mats:
+                    self.material_data[obj.name] = mats
 
-        for obj in objects:
-            try:
-                if self.settings.export_mesh and obj.type == 'MESH':
-                    mesh = mesh_collector.collect(obj, self.settings)
-                    if mesh:
-                        self.mesh_data[obj.name] = mesh
-
-                if self.settings.export_skeleton and obj.type == 'ARMATURE':
-                    bones = skeleton_collector.collect(obj, self.settings)
-                    if bones:
-                        self.skeleton_data[obj.name] = bones
-
-                if self.settings.export_animation and obj.animation_data:
-                    if obj.animation_data.action:
-                        anim = anim_collector.collect(obj, obj.animation_data.action, self.settings)
-                        if anim:
-                            self.animation_data[f"{obj.name}_{obj.animation_data.action.name}"] = anim
-                    if obj.animation_data.nla_tracks:
-                        for track in obj.animation_data.nla_tracks:
-                            for strip in track.strips:
-                                if strip.action:
-                                    anim = anim_collector.collect(obj, strip.action, self.settings)
-                                    if anim:
-                                        self.animation_data[f"{obj.name}_{strip.action.name}"] = anim
-
-                if self.settings.export_materials:
-                    mats = mat_collector.collect(obj, self.settings)
-                    if mats:
-                        self.material_data[obj.name] = mats
-
-            except Exception as e:
-                logger.warning(f"Failed to process object {obj.name}: {str(e)}")
-                self.report_lines.append(f"WARNING: Failed to process {obj.name}: {str(e)}")
-
-    def validate(self):
-        logger.info("验证数据 Validating data")
-        self.report_lines.append("Validating data...")
-
-        issues = []
-        for obj_name, mesh in self.mesh_data.items():
-            if not mesh.get("vertices"):
-                issues.append(f"{obj_name}: No vertices found")
-            if self.settings.export_tangents and not mesh.get("uvs"):
-                issues.append(f"{obj_name}: Missing UVs for tangent generation")
-            if self.settings.max_weights > 0 and mesh.get("max_weights", 0) > self.settings.max_weights:
-                issues.append(f"{obj_name}: Too many bone weights per vertex")
-
-        if issues:
-            for issue in issues:
-                logger.warning(issue)
-                self.report_lines.append(f"WARNING: {issue}")
-        else:
-            self.report_lines.append("Validation passed")
-
-    def write_files(self):
-        logger.info("写入文件 Writing files")
-        self.report_lines.append("Writing files...")
-
+    def write_model_files(self):
+        logger.info("写入模型文件 Writing model files")
         export_root = bpy.path.abspath(self.settings.export_path or ".")
         models_dir = os.path.join(export_root, MODELS_SUBFOLDER)
-        anims_dir = os.path.join(export_root, ANIMATIONS_SUBFOLDER)
         mats_dir = os.path.join(export_root, MATERIALS_SUBFOLDER)
         os.makedirs(models_dir, exist_ok=True)
-        os.makedirs(anims_dir, exist_ok=True)
         os.makedirs(mats_dir, exist_ok=True)
 
-        # 写模型相关文件
         for obj_name, mesh in self.mesh_data.items():
             try:
                 base_name = obj_name
@@ -172,7 +136,46 @@ class BigWorldExporter:
                 logger.error(f"Failed to export {obj_name}: {str(e)}")
                 self.report_lines.append(f"ERROR: Failed to export {obj_name}: {str(e)}")
 
-        # 写动画文件
+    # -------------------------
+    # 导出动画
+    # -------------------------
+    def export_animations(self):
+        logger.info("开始导出动画 Start animation export")
+        self.report_lines.append("=== BigWorld Export Report (Animations) ===")
+        try:
+            self.collect_animations()
+            self.write_animation_files()
+            self._write_report(success=True)
+            logger.info("动画导出完成 Animation export finished")
+        except Exception as e:
+            logger.error(f"Animation export failed: {str(e)}")
+            self.report_lines.append(f"ERROR: {str(e)}")
+            self._write_report(success=False)
+            raise
+
+    def collect_animations(self):
+        logger.info("收集动画 Collecting animations")
+        anim_collector = AnimationCollector()
+        for obj in self._get_objects():
+            if self.settings.export_animation and obj.animation_data:
+                if obj.animation_data.action:
+                    anim = anim_collector.collect(obj, obj.animation_data.action, self.settings)
+                    if anim:
+                        self.animation_data[f"{obj.name}_{obj.animation_data.action.name}"] = anim
+                if obj.animation_data.nla_tracks:
+                    for track in obj.animation_data.nla_tracks:
+                        for strip in track.strips:
+                            if strip.action:
+                                anim = anim_collector.collect(obj, strip.action, self.settings)
+                                if anim:
+                                    self.animation_data[f"{obj.name}_{strip.action.name}"] = anim
+
+    def write_animation_files(self):
+        logger.info("写入动画文件 Writing animation files")
+        export_root = bpy.path.abspath(self.settings.export_path or ".")
+        anims_dir = os.path.join(export_root, ANIMATIONS_SUBFOLDER)
+        os.makedirs(anims_dir, exist_ok=True)
+
         for anim_name, anim in self.animation_data.items():
             try:
                 anim_file = os.path.join(anims_dir, f"{anim_name}.animation")
@@ -182,6 +185,32 @@ class BigWorldExporter:
                 logger.error(f"Failed to export animation {anim_name}: {str(e)}")
                 self.report_lines.append(f"ERROR: Failed to export animation {anim_name}: {str(e)}")
 
+    # -------------------------
+    # 验证
+    # -------------------------
+    def validate(self):
+        logger.info("验证数据 Validating data")
+        self.report_lines.append("Validating data...")
+
+        issues = []
+        for obj_name, mesh in self.mesh_data.items():
+            if not mesh.get("vertices"):
+                issues.append(f"{obj_name}: No vertices found")
+            if self.settings.export_tangents and not mesh.get("uvs"):
+                issues.append(f"{obj_name}: Missing UVs for tangent generation")
+            if self.settings.max_weights > 0 and mesh.get("max_weights", 0) > self.settings.max_weights:
+                issues.append(f"{obj_name}: Too many bone weights per vertex")
+
+        if issues:
+            for issue in issues:
+                logger.warning(issue)
+                self.report_lines.append(f"WARNING: {issue}")
+        else:
+            self.report_lines.append("Validation passed")
+
+    # -------------------------
+    # 材质合并
+    # -------------------------
     def _build_material_file_data(self, obj_name: str):
         """Aggregate object material data into a single .mfm definition."""
         mats = self.material_data.get(obj_name, [])
@@ -195,21 +224,14 @@ class BigWorldExporter:
         for m in mats:
             for k, v in m.get("textures", {}).items():
                 merged["textures"][k] = v
+            for k, v in m.get("parameters", {}).items():
+                merged["parameters"][k] = v
         return merged
 
-    def _write_report(self, success=True):
-        try:
-            report_path = bpy.path.abspath(self.settings.report_path or "./export_report.txt")
-            with open(report_path, "w", encoding="utf-8") as f:
-                for line in self.report_lines:
-                    f.write(line + "\n")
-                f.write("\n")
-                f.write("Export SUCCESS\n" if success else "Export FAILED\n")
-            logger.info(f"Report written to {report_path}")
-        except Exception as e:
-            logger.error(f"Failed to write report: {str(e)}")
 
-
+# -------------------------
+# Blender 注册接口
+# -------------------------
 def register():
     pass
 
