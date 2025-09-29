@@ -9,6 +9,7 @@ from .path_utils import ensure_dir, normalize_path
 from .fx_checker import resolve_fx_for_material
 from .textures import export_image
 from .primitives_writer import write_primitives_for_object
+from .primitives_binary_writer import write_primitives_binary
 from .visual_writer import write_visual_for_object
 from .model_writer import write_model_for_object
 
@@ -56,7 +57,7 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
     def execute(self, context):
         config = get_config()
         LOG.info("开始导出 BigWorld 模型")
-        LOG.info(f"配置: unitScale={config.get('unitScale')} normal_mapped={config.get('normal_mapped')} res_root={config.get('res_root')} default_fx={config.get('default_fx')}")
+        LOG.info(f"配置: unitScale={config.get('unitScale')} res_root={config.get('res_root')} default_fx={config.get('default_fx')} normal_mapped={config.get('normal_mapped')} primitives_binary={config.get('primitives_binary')} prefer_dds={config.get('prefer_dds')}")
 
         checks = preflight_check(context.scene, config)
         for k, lst in checks.items():
@@ -79,6 +80,12 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
         res_root_abs = os.path.abspath(config.get("res_root", "res"))
         fx_map = {}
         material_fx_map = {}
+        prefer_dds = False
+        try:
+            prefer_dds = config.getboolean("prefer_dds")
+        except Exception:
+            prefer_dds = False
+
         for idx, mat in enumerate(bpy.data.materials):
             fx_hint = getattr(mat, "bigworld_fx", "") if hasattr(mat, "bigworld_fx") else ""
             resolved_fx, status, candidates = resolve_fx_for_material(
@@ -99,7 +106,7 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
                     if n.type == 'TEX_IMAGE' and getattr(n, "image", None):
                         name_lower = (n.name or "").lower()
                         color_space = "linear" if "normal" in name_lower else "srgb"
-                        tex_rel = export_image(n.image, tmp_res_root, config.get("res_root","res"), color_space=color_space)
+                        tex_rel = export_image(n.image, tmp_res_root, config.get("res_root","res"), prefer_dds=prefer_dds, color_space=color_space)
                         if tex_rel:
                             textures_list.append(tex_rel)
             material_fx_map[idx] = {"name": mat.name, "fx": resolved_fx or config.get("default_fx"), "textures": textures_list}
@@ -112,6 +119,11 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
             normal_mapped_flag = config.getboolean("normal_mapped")
         except Exception:
             normal_mapped_flag = True
+        try:
+            primitives_binary_flag = config.getboolean("primitives_binary")
+        except Exception:
+            primitives_binary_flag = True
+        max_uv_layers = int(config.get("max_uv_layers", 2))
 
         for obj in context.selected_objects:
             if obj.type != 'MESH':
@@ -119,10 +131,18 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
                 continue
             LOG.info(f"导出对象: {obj.name}")
 
-            primitives_meta = write_primitives_for_object(
-                obj, tmp_res_root, rel_primitives_dir="primitives",
-                config={"normal_mapped": normal_mapped_flag}
-            )
+            # primitives 二选一
+            if primitives_binary_flag:
+                primitives_meta = write_primitives_binary(
+                    obj, tmp_res_root, rel_primitives_dir="primitives",
+                    config={"normal_mapped": normal_mapped_flag, "max_uv_layers": max_uv_layers}
+                )
+            else:
+                primitives_meta = write_primitives_for_object(
+                    obj, tmp_res_root, rel_primitives_dir="primitives",
+                    config={"normal_mapped": normal_mapped_flag, "max_uv_layers": max_uv_layers}
+                )
+
             visual_rel = write_visual_for_object(
                 obj, primitives_meta, material_fx_map, tmp_res_root,
                 rel_visual_dir="visuals",
@@ -153,7 +173,12 @@ class BIGWORLDEXPORTER_OT_export(bpy.types.Operator):
         errors = []
         for em in exported:
             pm = em["primitives"]
-            for rel in [pm["vertices_file"], pm["indices_file"], em["visual"], em["model"]]:
+            # 二进制：pm['file']；明文：pm['vertices_file'] / pm['indices_file']
+            if "file" in pm and pm["file"]:
+                needed = [pm["file"], em["visual"], em["model"]]
+            else:
+                needed = [pm["vertices_file"], pm["indices_file"], em["visual"], em["model"]]
+            for rel in needed:
                 ok, full = _case_exists(tmp_res_root, rel)
                 if not ok:
                     errors.append(f"缺失文件: {full}")
