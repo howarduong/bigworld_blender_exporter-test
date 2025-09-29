@@ -9,19 +9,36 @@ def normalize_path(p: str) -> str:
     return p.strip()
 
 def exists_case_sensitive(path: str) -> bool:
+    """
+    严格大小写敏感存在性检查：逐级目录项比对名称。
+    """
     path = os.path.normpath(path)
     if not os.path.exists(path):
         return False
-    parts = path.split(os.sep)
-    cur = parts[0]
-    for part in parts[1:]:
+    parts = []
+    # 处理盘符或根
+    drive, tail = os.path.splitdrive(path)
+    if drive:
+        parts.append(drive + os.sep)
+        rel = tail.lstrip(os.sep)
+    else:
+        if path.startswith(os.sep):
+            parts.append(os.sep)
+            rel = path[len(os.sep):]
+        else:
+            parts.append("")
+            rel = path
+    chunks = [c for c in rel.split(os.sep) if c]
+    cur = parts[0] if parts[0] else chunks[0] if chunks else ""
+    start_idx = 0 if parts[0] else 1
+    for i in range(start_idx, len(chunks)):
         try:
             items = os.listdir(cur)
         except Exception:
             return False
-        if part not in items:
+        if chunks[i] not in items:
             return False
-        cur = os.path.join(cur, part)
+        cur = os.path.join(cur, chunks[i])
     return True
 
 def ensure_dir(path: str):
