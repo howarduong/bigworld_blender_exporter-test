@@ -3,9 +3,7 @@
 
 import bpy
 from bpy.types import Operator
-from bpy.props import StringProperty
 import os
-
 from ..core.exporter import BigWorldExporter
 from ..utils.logger import get_logger
 from ..config import save_preset, load_preset
@@ -30,18 +28,16 @@ class EXPORT_OT_bigworld_model(Operator):
                 return {'CANCELLED'}
 
             os.makedirs(settings.export_path, exist_ok=True)
-
             exporter = BigWorldExporter(context, settings)
             log.info("Starting model export...")
-            exporter.export()
-
+            exporter.export_models()   # ✅ 改为 export_models()
             self.report({'INFO'}, f"Model export finished! Exported to: {settings.export_path}")
             if hasattr(context.scene, 'bigworld_export_status'):
                 context.scene.bigworld_export_status = "Export complete 导出完成"
             return {'FINISHED'}
         except Exception as e:
-            log.error(f"Export failed: {str(e)}")
-            self.report({'ERROR'}, f"Export failed: {str(e)}")
+            log.error(f"Model export failed: {str(e)}")
+            self.report({'ERROR'}, f"Model export failed: {str(e)}")
             if hasattr(context.scene, 'bigworld_export_status'):
                 context.scene.bigworld_export_status = f"Error 错误: {str(e)}"
             return {'CANCELLED'}
@@ -63,33 +59,11 @@ class EXPORT_OT_bigworld_animation(Operator):
                 self.report({'ERROR'}, "Please set export path! 请设置导出路径！")
                 return {'CANCELLED'}
 
-            anim_path = os.path.join(settings.export_path, "animations")
-            os.makedirs(anim_path, exist_ok=True)
-
-            from ..core.animation_processor import AnimationProcessor
-            processor = AnimationProcessor()
-
-            animated_objects = []
-            for obj in context.selected_objects:
-                if obj.animation_data:
-                    if obj.animation_data.action:
-                        animated_objects.append((obj, obj.animation_data.action))
-                    if obj.animation_data.nla_tracks:
-                        for track in obj.animation_data.nla_tracks:
-                            for strip in track.strips:
-                                animated_objects.append((obj, strip.action))
-
-            if not animated_objects:
-                self.report({'WARNING'}, "No animated objects found! 未找到动画对象！")
-                return {'CANCELLED'}
-
-            from ..formats.animation_format import export_animation_file
-            for obj, action in animated_objects:
-                anim_data = processor.process(obj, action, settings)
-                anim_file = os.path.join(anim_path, f"{obj.name}_{action.name}.animation")
-                export_animation_file(anim_file, anim_data)
-
-            self.report({'INFO'}, f"Animation export finished! Exported {len(animated_objects)} animations.")
+            os.makedirs(os.path.join(settings.export_path, "animations"), exist_ok=True)
+            exporter = BigWorldExporter(context, settings)
+            log.info("Starting animation export...")
+            exporter.export_animations()   # ✅ 改为 export_animations()
+            self.report({'INFO'}, f"Animation export finished! Exported to: {settings.export_path}")
             if hasattr(context.scene, 'bigworld_export_status'):
                 context.scene.bigworld_export_status = "Animation export complete 动画导出完成"
             return {'FINISHED'}
@@ -119,13 +93,11 @@ class EXPORT_OT_bigworld_batch(Operator):
 
             original_scene = context.scene
             exported_count = 0
-
             for scene in bpy.data.scenes:
                 context.window.scene = scene
                 exporter = BigWorldExporter(context, settings)
-                exporter.export()
+                exporter.export_models()   # ✅ 批量导出时默认导出模型
                 exported_count += 1
-
             context.window.scene = original_scene
             self.report({'INFO'}, f"Batch export finished! Exported {exported_count} scenes.")
             return {'FINISHED'}
@@ -149,12 +121,10 @@ class EXPORT_OT_bigworld_selected(Operator):
             if not context.selected_objects:
                 self.report({'WARNING'}, "No objects selected! 未选中对象！")
                 return {'CANCELLED'}
-
             settings = context.scene.bigworld_export
             settings.export_selected = True
             exporter = BigWorldExporter(context, settings)
-            exporter.export()
-
+            exporter.export_models()   # ✅ 改为 export_models()
             self.report({'INFO'}, f"Selected objects export finished! Exported {len(context.selected_objects)} objects.")
             return {'FINISHED'}
         except Exception as e:
@@ -164,7 +134,7 @@ class EXPORT_OT_bigworld_selected(Operator):
 
 
 # -------------------------
-# 验证与修复
+# 验证与修复 / 预设 / 报告
 # -------------------------
 class BIGWORLD_OT_validate_scene(Operator):
     bl_idname = "bigworld.validate_scene"
@@ -187,10 +157,8 @@ class BIGWORLD_OT_validate_scene(Operator):
             log.error(f"Validation failed: {str(e)}")
             self.report({'ERROR'}, f"Validation failed: {str(e)}")
             return {'CANCELLED'}
-        
-# -------------------------
-# 自动修复
-# -------------------------
+
+
 class BIGWORLD_OT_fix_scene(Operator):
     bl_idname = "bigworld.fix_scene"
     bl_label = "Fix Scene 自动修复"
@@ -212,9 +180,6 @@ class BIGWORLD_OT_fix_scene(Operator):
             return {'CANCELLED'}
 
 
-# -------------------------
-# 保存预设
-# -------------------------
 class BIGWORLD_OT_save_preset(Operator):
     bl_idname = "bigworld.save_preset"
     bl_label = "Save Preset 保存预设"
@@ -224,8 +189,8 @@ class BIGWORLD_OT_save_preset(Operator):
     def execute(self, context):
         try:
             settings = context.scene.bigworld_export
-            save_preset(settings, settings.preset_path)
-            self.report({'INFO'}, f"Preset saved to {settings.preset_path}")
+            save_preset(settings, "default")
+            self.report({'INFO'}, "Preset saved")
             return {'FINISHED'}
         except Exception as e:
             log.error(f"Save preset failed: {str(e)}")
@@ -233,9 +198,6 @@ class BIGWORLD_OT_save_preset(Operator):
             return {'CANCELLED'}
 
 
-# -------------------------
-# 加载预设
-# -------------------------
 class BIGWORLD_OT_load_preset(Operator):
     bl_idname = "bigworld.load_preset"
     bl_label = "Load Preset 加载预设"
@@ -245,11 +207,8 @@ class BIGWORLD_OT_load_preset(Operator):
     def execute(self, context):
         try:
             settings = context.scene.bigworld_export
-            ok = load_preset(settings, settings.preset_path)
-            if ok:
-                self.report({'INFO'}, f"Preset loaded from {settings.preset_path}")
-            else:
-                self.report({'WARNING'}, f"Preset not found: {settings.preset_path}")
+            load_preset(settings, "default")
+            self.report({'INFO'}, "Preset loaded")
             return {'FINISHED'}
         except Exception as e:
             log.error(f"Load preset failed: {str(e)}")
@@ -257,9 +216,6 @@ class BIGWORLD_OT_load_preset(Operator):
             return {'CANCELLED'}
 
 
-# -------------------------
-# 打开报告
-# -------------------------
 class BIGWORLD_OT_open_report(Operator):
     bl_idname = "bigworld.open_report"
     bl_label = "Open Report 打开报告"
@@ -271,7 +227,10 @@ class BIGWORLD_OT_open_report(Operator):
             settings = context.scene.bigworld_export
             path = bpy.path.abspath(settings.report_path)
             if os.path.exists(path):
-                os.startfile(path) if os.name == 'nt' else os.system(f'open "{path}"')
+                if os.name == 'nt':
+                    os.startfile(path)
+                else:
+                    os.system(f'open "{path}"')
                 self.report({'INFO'}, f"Opened report: {path}")
             else:
                 self.report({'WARNING'}, "Report file not found 报告文件未找到")
@@ -306,3 +265,4 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
