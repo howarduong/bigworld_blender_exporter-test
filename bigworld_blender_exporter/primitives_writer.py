@@ -17,10 +17,11 @@ def triangulate_eval_mesh(obj):
     bm.free()
     return obj_eval, mesh
 
-def gather_mesh_data(obj, need_tangent=False):
+def gather_mesh_data(obj, need_tangent=True, max_uv_layers=2):
     obj_eval, mesh = triangulate_eval_mesh(obj)
-    uv_layer = mesh.uv_layers.active.data if mesh.uv_layers.active else None
-    has_uv = uv_layer is not None
+    uv_layers = mesh.uv_layers
+    active_uv = uv_layers.active
+    has_uv = uv_layers and len(uv_layers) > 0
     mesh.calc_normals_split()
     if need_tangent and has_uv:
         try:
@@ -34,19 +35,23 @@ def gather_mesh_data(obj, need_tangent=False):
     idx_counter = 0
     material_groups = {}
 
+    # 收集最多 max_uv_layers 的UV
+    uv_data_layers = []
+    for i in range(min(len(uv_layers), max_uv_layers)):
+        uv_data_layers.append(uv_layers[i].data)
+
     for poly in mesh.polygons:
-        if len(poly.loop_indices) != 3:
-            LOG.debug(f"Non-tri polygon on {obj.name} count={len(poly.loop_indices)}")
         tri = []
         for li in poly.loop_indices:
             loop = mesh.loops[li]
             v = mesh.vertices[loop.vertex_index]
             co = (round(v.co.x,6), round(v.co.y,6), round(v.co.z,6))
-            n = (round(loop.normal.x,6), round(loop.normal.y,6), round(loop.normal.z,6))
-            uv = (0.0, 0.0)
-            if has_uv:
+            n  = (round(loop.normal.x,6), round(loop.normal.y,6), round(loop.normal.z,6))
+            uvs = []
+            for uv_layer in uv_data_layers:
                 uv = (round(uv_layer[li].uv.x,6), round(uv_layer[li].uv.y,6))
-            tangent = (0.0,0.0,0.0,1.0)
+                uvs.append(uv)
+            tangent = None
             if need_tangent and hasattr(loop, "tangent"):
                 tangent = (
                     round(loop.tangent.x,6),
@@ -54,18 +59,15 @@ def gather_mesh_data(obj, need_tangent=False):
                     round(loop.tangent.z,6),
                     round(getattr(loop, "bitangent_sign", 1.0),6)
                 )
-            key = (co, n, uv, tangent if need_tangent else None)
+            key = (co, n, tuple(uvs), tangent if need_tangent else None)
             if key not in vert_map:
                 vert_map[key] = idx_counter
-                verts.append({"co":co, "n":n, "uv":uv, "t":tangent if need_tangent else None})
+                verts.append({"co":co, "n":n, "uvs":uvs, "t":tangent})
                 idx_counter += 1
             tri.append(vert_map[key])
         midx = poly.material_index
-        if midx not in material_groups:
-            material_groups[midx] = []
-        material_groups[midx].extend(tri)
+        material_groups.setdefault(midx, []).extend(tri)
 
-    # bbox
     xs = [v["co"][0] for v in verts] if verts else [0]
     ys = [v["co"][1] for v in verts] if verts else [0]
     zs = [v["co"][2] for v in verts] if verts else [0]
@@ -77,7 +79,7 @@ def gather_mesh_data(obj, need_tangent=False):
         "material_groups": material_groups,
         "vertex_count": len(verts),
         "index_count": sum(len(v) for v in material_groups.values()),
-        "has_uv": has_uv,
+        "uv_layer_count": len(uv_data_layers),
         "need_tangent": need_tangent,
         "bounding_box": bbox
     }
@@ -87,15 +89,20 @@ def write_primitives_for_object(obj, tmp_res_root, rel_primitives_dir="primitive
         config = {}
     out_dir = os.path.join(tmp_res_root, rel_primitives_dir)
     ensure_dir(out_dir)
-    need_tangent = bool(config.get("normal_mapped", False))
-    data = gather_mesh_data(obj, need_tangent=need_tangent)
+    need_tangent = bool(config.get("normal_mapped", True))
+    uv_layers_to_export = 2
 
+    data = gather_mesh_data(obj, need_tangent=need_tangent, max_uv_layers=uv_layers_to_export)
     verts = data["vertices"]
     groups = data["material_groups"]
     vcount = data["vertex_count"]
     icount = data["index_count"]
+    uv_count = data["uv_layer_count"]
     index_format = "list" if vcount < 65535 else "list32"
-    vertex_format = "xyznuv" + ("t" if data["need_tangent"] else "")
+
+    # 顶点格式描述（xyzn + uv* + t）
+    uv_suffix = "uv" * max(1, uv_count)
+    vertex_format = "xyzn" + uv_suffix + ("t" if data["need_tangent"] else "")
 
     base = f"{obj.name}_base"
     verts_fname = f"{base}.vertices"
@@ -103,24 +110,25 @@ def write_primitives_for_object(obj, tmp_res_root, rel_primitives_dir="primitive
     verts_path = os.path.join(out_dir, verts_fname)
     idx_path = os.path.join(out_dir, idx_fname)
 
-    # vertices
+    # 写 vertices（明文BNF，便于调试与比对）
     with open(verts_path, "w", encoding="utf-8") as vf:
         vf.write(f"vertex_format {vertex_format}\n")
         vf.write(f"vertex_count {vcount}\n")
+        vf.write(f"uv_layer_count {uv_count}\n")
         for v in verts:
-            co, n, uv = v["co"], v["n"], v["uv"]
-            line = f"{co[0]} {co[1]} {co[2]} {n[0]} {n[1]} {n[2]} {uv[0]} {uv[1]}"
-            if v["t"] is not None:
-                t = v["t"]
-                line += f" {t[0]} {t[1]} {t[2]} {t[3]}"
-            vf.write(line + "\n")
+            co, n, uvs, t = v["co"], v["n"], v["uvs"], v["t"]
+            parts = [co[0], co[1], co[2], n[0], n[1], n[2]]
+            for uv in uvs:
+                parts.extend([uv[0], uv[1]])
+            if t is not None:
+                parts.extend([t[0], t[1], t[2], t[3]])
+            vf.write(" ".join(map(str, parts)) + "\n")
 
-    # indices + primitive groups
+    # 写 indices + primitive groups
     with open(idx_path, "w", encoding="utf-8") as inf:
         inf.write(f"index_format {index_format}\n")
         inf.write(f"index_count {icount}\n")
         inf.write(f"primitive_group_count {len(groups)}\n")
-        # 写每组的起始与数量（单位：三角形）
         start_tri = 0
         group_table = []
         for midx, idxs in groups.items():
@@ -128,7 +136,6 @@ def write_primitives_for_object(obj, tmp_res_root, rel_primitives_dir="primitive
             inf.write(f"primitive_group {midx} {start_tri} {tri_count}\n")
             group_table.append({"material_index": midx, "start": start_tri, "tri_count": tri_count})
             start_tri += tri_count
-        # 写具体索引
         for midx, idxs in groups.items():
             for i in range(0, len(idxs), 3):
                 a, b, c = idxs[i], idxs[i+1], idxs[i+2]
@@ -146,5 +153,7 @@ def write_primitives_for_object(obj, tmp_res_root, rel_primitives_dir="primitive
         "vertex_format": vertex_format,
         "index_format": index_format,
         "primitive_groups": group_table,
-        "bounding_box": data["bounding_box"]
+        "bounding_box": data["bounding_box"],
+        "uv_layer_count": uv_count,
+        "tangent": data["need_tangent"]
     }
