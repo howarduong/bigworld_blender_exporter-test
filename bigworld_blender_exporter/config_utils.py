@@ -13,7 +13,7 @@ DEFAULT_CFG = {
     "auto_fx_mode": "true",
     "default_fx": "shaders/std_effects/lightonly.fx",
     "res_root": "res",
-    "normal_mapped": "false"
+    "normal_mapped": "true"
 }
 
 def ensure_config():
