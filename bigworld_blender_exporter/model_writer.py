@@ -18,14 +18,26 @@ def write_model_for_object(obj, visual_rel_path, tmp_res_root, rel_model_dir="mo
     with open(model_path, "w", encoding="utf-8") as mf:
         mf.write("<model>\n")
         mf.write(f"  nodefullVisual {visual_base}\n")
+        # extent
         mf.write("  extent\n")
         mf.write(f"    {bb_min[0]} {bb_min[1]} {bb_min[2]}\n")
         mf.write(f"    {bb_max[0]} {bb_max[1]} {bb_max[2]}\n")
         mf.write("  endextent\n")
+        # visibilityBox（与extent同）
+        mf.write("  visibilityBox\n")
+        mf.write(f"    {bb_min[0]} {bb_min[1]} {bb_min[2]}\n")
+        mf.write(f"    {bb_max[0]} {bb_max[1]} {bb_max[2]}\n")
+        mf.write("  endvisibilityBox\n")
+        # materialNames
         mf.write("  materialNames\n")
         for n in names:
             mf.write(f"    {n}\n")
         mf.write("  endmaterialNames\n")
+        # 占位：animations/actions
+        mf.write("  animations\n")
+        mf.write("  endanimations\n")
+        mf.write("  actions\n")
+        mf.write("  endactions\n")
         mf.write("</model>\n")
 
     rel = normalize_path(os.path.join(rel_model_dir, model_name))
