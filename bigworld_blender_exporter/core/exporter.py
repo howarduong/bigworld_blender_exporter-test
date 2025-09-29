@@ -4,11 +4,9 @@
 import bpy
 import os
 from ..utils import logger
-from .model_processor import ModelProcessor
-from .animation_processor import AnimationProcessor
-from .material_processor import MaterialProcessor
 from ..formats import model_format, visual_format, primitives_format, animation_format, material_format
 from ..config import MODELS_SUBFOLDER, ANIMATIONS_SUBFOLDER, MATERIALS_SUBFOLDER
+from .collectors import MeshCollector, SkeletonCollector, AnimationCollector, MaterialCollector
 
 
 class BigWorldExporter:
@@ -17,9 +15,10 @@ class BigWorldExporter:
     def __init__(self, context, settings):
         self.context = context
         self.settings = settings
-        self.model_data = {}
-        self.visual_data = {}
-        self.primitives_data = {}
+        self.mesh_data = {}
+        self.skeleton_data = {}
+        self.animation_data = {}
+        self.material_data = {}
         self.report_lines = []
 
     def export(self):
@@ -48,31 +47,41 @@ class BigWorldExporter:
         else:
             objects = self.context.scene.objects
 
+        mesh_collector = MeshCollector()
+        skeleton_collector = SkeletonCollector()
+        anim_collector = AnimationCollector()
+        mat_collector = MaterialCollector()
+
         for obj in objects:
             try:
-                # 模型
-                model = ModelProcessor().process(obj, self.settings)
-                if model:
-                    self.model_data[obj.name] = model
+                if self.settings.export_mesh and obj.type == 'MESH':
+                    mesh = mesh_collector.collect(obj, self.settings)
+                    if mesh:
+                        self.mesh_data[obj.name] = mesh
 
-                # 材质
-                mats = MaterialProcessor().process(obj, self.settings)
-                if mats:
-                    self.visual_data[obj.name] = mats
+                if self.settings.export_skeleton and obj.type == 'ARMATURE':
+                    bones = skeleton_collector.collect(obj, self.settings)
+                    if bones:
+                        self.skeleton_data[obj.name] = bones
 
-                # 动画
                 if self.settings.export_animation and obj.animation_data:
                     if obj.animation_data.action:
-                        anim_data = AnimationProcessor().process(obj, obj.animation_data.action, self.settings)
-                        if anim_data:
-                            self.primitives_data[f"{obj.name}_{obj.animation_data.action.name}"] = anim_data
+                        anim = anim_collector.collect(obj, obj.animation_data.action, self.settings)
+                        if anim:
+                            self.animation_data[f"{obj.name}_{obj.animation_data.action.name}"] = anim
                     if obj.animation_data.nla_tracks:
                         for track in obj.animation_data.nla_tracks:
                             for strip in track.strips:
                                 if strip.action:
-                                    anim_data = AnimationProcessor().process(obj, strip.action, self.settings)
-                                    if anim_data:
-                                        self.primitives_data[f"{obj.name}_{strip.action.name}"] = anim_data
+                                    anim = anim_collector.collect(obj, strip.action, self.settings)
+                                    if anim:
+                                        self.animation_data[f"{obj.name}_{strip.action.name}"] = anim
+
+                if self.settings.export_materials:
+                    mats = mat_collector.collect(obj, self.settings)
+                    if mats:
+                        self.material_data[obj.name] = mats
+
             except Exception as e:
                 logger.warning(f"Failed to process object {obj.name}: {str(e)}")
                 self.report_lines.append(f"WARNING: Failed to process {obj.name}: {str(e)}")
@@ -82,12 +91,12 @@ class BigWorldExporter:
         self.report_lines.append("Validating data...")
 
         issues = []
-        for obj_name, model in self.model_data.items():
-            if not model.get("vertices"):
+        for obj_name, mesh in self.mesh_data.items():
+            if not mesh.get("vertices"):
                 issues.append(f"{obj_name}: No vertices found")
-            if self.settings.export_tangents and "tangents" not in model:
-                issues.append(f"{obj_name}: Missing tangents")
-            if self.settings.max_weights > 0 and model.get("max_weights", 0) > self.settings.max_weights:
+            if self.settings.export_tangents and not mesh.get("uvs"):
+                issues.append(f"{obj_name}: Missing UVs for tangent generation")
+            if self.settings.max_weights > 0 and mesh.get("max_weights", 0) > self.settings.max_weights:
                 issues.append(f"{obj_name}: Too many bone weights per vertex")
 
         if issues:
@@ -110,15 +119,15 @@ class BigWorldExporter:
         os.makedirs(mats_dir, exist_ok=True)
 
         # 写模型相关文件
-        for obj_name, model in self.model_data.items():
+        for obj_name, mesh in self.mesh_data.items():
             try:
                 base_name = obj_name
 
                 # .primitives
                 primitives_path_rel = f"{MODELS_SUBFOLDER}/{base_name}.primitives"
                 primitives_path = os.path.join(export_root, primitives_path_rel)
-                vertices = model.get("vertices", [])
-                indices = model.get("indices", [])
+                vertices = mesh.get("vertices", [])
+                indices = mesh.get("indices", [])
                 primitives_format.export_primitives_file(
                     primitives_path, vertices, indices, getattr(self.settings, "vertex_format", "STANDARD")
                 )
@@ -139,8 +148,8 @@ class BigWorldExporter:
                     "end_index": len(indices),
                     "start_vertex": 0,
                     "end_vertex": len(vertices),
-                    "bbox_min": f"{model['bbox_min'][0]:.6f} {model['bbox_min'][1]:.6f} {model['bbox_min'][2]:.6f}",
-                    "bbox_max": f"{model['bbox_max'][0]:.6f} {model['bbox_max'][1]:.6f} {model['bbox_max'][2]:.6f}",
+                    "bbox_min": f"{mesh['bbox_min'][0]:.6f} {mesh['bbox_min'][1]:.6f} {mesh['bbox_min'][2]:.6f}",
+                    "bbox_max": f"{mesh['bbox_max'][0]:.6f} {mesh['bbox_max'][1]:.6f} {mesh['bbox_max'][2]:.6f}",
                 }
                 visual_path_rel = f"{MODELS_SUBFOLDER}/{base_name}.visual"
                 visual_path = os.path.join(export_root, visual_path_rel)
@@ -150,9 +159,9 @@ class BigWorldExporter:
                 model_info = {
                     "visual": visual_path_rel,
                     "parent": "",
-                    "extent": model.get("extent", 10.0),
-                    "bbox_min": f"{model['bbox_min'][0]:.6f} {model['bbox_min'][1]:.6f} {model['bbox_min'][2]:.6f}",
-                    "bbox_max": f"{model['bbox_max'][0]:.6f} {model['bbox_max'][1]:.6f} {model['bbox_max'][2]:.6f}",
+                    "extent": mesh.get("extent", 10.0),
+                    "bbox_min": f"{mesh['bbox_min'][0]:.6f} {mesh['bbox_min'][1]:.6f} {mesh['bbox_min'][2]:.6f}",
+                    "bbox_max": f"{mesh['bbox_max'][0]:.6f} {mesh['bbox_max'][1]:.6f} {mesh['bbox_max'][2]:.6f}",
                     "bsp_model": "",
                 }
                 model_path = os.path.join(export_root, f"{MODELS_SUBFOLDER}/{base_name}.model")
@@ -164,7 +173,7 @@ class BigWorldExporter:
                 self.report_lines.append(f"ERROR: Failed to export {obj_name}: {str(e)}")
 
         # 写动画文件
-        for anim_name, anim in self.primitives_data.items():
+        for anim_name, anim in self.animation_data.items():
             try:
                 anim_file = os.path.join(anims_dir, f"{anim_name}.animation")
                 animation_format.export_animation_file(anim_file, anim)
@@ -175,7 +184,7 @@ class BigWorldExporter:
 
     def _build_material_file_data(self, obj_name: str):
         """Aggregate object material data into a single .mfm definition."""
-        mats = self.visual_data.get(obj_name, [])
+        mats = self.material_data.get(obj_name, [])
         merged = {
             "name": obj_name,
             "shader": "shaders/std_effects.fx",
