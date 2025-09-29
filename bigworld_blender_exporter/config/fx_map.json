@@ -1,6 +1,6 @@
 {
-  "default": "shaders/std_effects.fx",
-  "Principled BSDF": "shaders/std_effects.fx",
-  "ToonShader": "shaders/toon.fx",
-  "GlassShader": "shaders/glass.fx"
+  "Principled BSDF": "shaders/std_effects/lightonly.fx",
+  "Skin": "shaders/std_effects/lightonly_skinned.fx",
+  "Environment": "shaders/environment/metal.fx",
+  "Particle": "shaders/particles/basic.fx"
 }
