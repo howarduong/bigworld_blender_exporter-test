@@ -2,7 +2,7 @@
 # UI Panel definitions for BigWorld exporter
 
 import bpy
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 from ..formats.vertex_formats import list_formats
 
 
@@ -17,7 +17,7 @@ class BIGWORLD_PT_export_panel(Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = context.scene.bigworld_export
+        settings = context.scene.bw_exporter
 
         # Export path
         col = layout.column(align=True)
@@ -85,7 +85,7 @@ class BIGWORLD_PT_model_settings(Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = context.scene.bigworld_export
+        settings = context.scene.bw_exporter
 
         # Mesh settings
         box = layout.box()
@@ -98,8 +98,6 @@ class BIGWORLD_PT_model_settings(Panel):
         col.prop(settings, "smoothing_angle", text="Smoothing 平滑角度")
 
         # Vertex format dropdown
-        formats = list_formats()
-        items = [(f[0], f"{f[0]} ({'Skinned' if f[2] else 'Static'})", "") for f in formats]
         col.prop(settings, "vertex_format", text="Format 格式")
 
         # Index strategy
@@ -125,11 +123,11 @@ class BIGWORLD_PT_animation_settings(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.bigworld_export.export_animation
+        return context.scene.bw_exporter.export_animation
 
     def draw(self, context):
         layout = self.layout
-        settings = context.scene.bigworld_export
+        settings = context.scene.bw_exporter
 
         box = layout.box()
         box.label(text="Animation Export 动画导出:", icon='ACTION')
@@ -142,6 +140,13 @@ class BIGWORLD_PT_animation_settings(Panel):
         col.prop(settings, "loop_animation", text="Loop 循环")
         col.prop(settings, "cognate", text="Cognate 同源")
         col.prop(settings, "alpha", text="Alpha 混合")
+
+        # Markers UI
+        col.label(text="Markers 事件标记:")
+        row = col.row()
+        row.template_list("UI_UL_list", "bw_animation_markers", settings, "markers", settings, "marker_index")
+        col.operator("bigworld.add_marker", text="Add Marker 添加标记")
+        col.operator("bigworld.remove_marker", text="Remove Marker 删除标记")
 
 
 class BIGWORLD_PT_material_settings(Panel):
@@ -156,18 +161,24 @@ class BIGWORLD_PT_material_settings(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.bigworld_export.export_materials
+        return context.scene.bw_exporter.export_materials
 
-def draw(self, context):
-    layout = self.layout
-    settings = context.scene.bigworld_export
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.bw_exporter
 
-    box = layout.box()
-    box.label(text="Material Export 材质导出:", icon='MATERIAL')
-    col = box.column(align=True)
-    col.prop(settings, "texture_path", text="Texture Path 贴图路径")
-    col.prop(settings, "copy_textures", text="Copy Textures 复制贴图")
-    col.prop(settings, "convert_to_dds", text="Convert to DDS 转DDS")
+        box = layout.box()
+        box.label(text="Material Export 材质导出:", icon='MATERIAL')
+        col = box.column(align=True)
+        col.prop(settings, "texture_path", text="Texture Path 贴图路径")
+        col.prop(settings, "copy_textures", text="Copy Textures 复制贴图")
+        col.prop(settings, "convert_to_dds", text="Convert to DDS 转DDS")
+
+        # 扩展属性
+        col.separator()
+        col.prop(settings, "alphaTestEnable", text="Alpha Test 启用透明测试")
+        col.prop(settings, "doubleSided", text="Double Sided 双面渲染")
+        col.prop(settings, "collisionFlags", text="Collision Flags 碰撞标志")
 
 
 # 高级设置面板
@@ -181,10 +192,9 @@ class BIGWORLD_PT_advanced_settings(Panel):
     bl_parent_id = "BIGWORLD_PT_export_panel"
     bl_options = {'DEFAULT_CLOSED'}
 
-
     def draw(self, context):
         layout = self.layout
-        settings = context.scene.bigworld_export
+        settings = context.scene.bw_exporter
 
         # Performance settings
         box = layout.box()
