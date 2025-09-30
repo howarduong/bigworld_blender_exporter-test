@@ -11,6 +11,9 @@ Supported keys:
   - collisionFlags: optional int
   - alphaTestEnable: optional bool
   - doubleSided: optional bool
+  - zBufferWrite: optional bool
+  - castShadow: optional bool
+  - receiveShadow: optional bool
 """
 
 import xml.etree.ElementTree as ET
@@ -29,14 +32,19 @@ def export_material_file(filepath, mat_data):
       - collisionFlags?: int
       - alphaTestEnable?: bool
       - doubleSided?: bool
+      - zBufferWrite?: bool
+      - castShadow?: bool
+      - receiveShadow?: bool
     """
     logger.info(f"Exporting material file: {filepath}")
     root = ET.Element("mfm")
 
+    # 基础字段
     ET.SubElement(root, "identifier").text = mat_data.get("identifier", "")
     ET.SubElement(root, "fx").text = mat_data.get("fx", "shaders/std_effects.fx")
     ET.SubElement(root, "materialKind").text = mat_data.get("materialKind", "solid")
 
+    # 属性
     props = mat_data.get("properties", {})
     if props:
         props_elem = ET.SubElement(root, "properties")
@@ -60,13 +68,20 @@ def export_material_file(filepath, mat_data):
                 ET.SubElement(p, "type").text = "Texture"
                 ET.SubElement(p, "value").text = str(v)
 
-    # Extended flags
+    # 扩展 flags
     if "collisionFlags" in mat_data:
         ET.SubElement(root, "collisionFlags").text = str(int(mat_data["collisionFlags"]))
     if "alphaTestEnable" in mat_data:
         ET.SubElement(root, "alphaTestEnable").text = str(bool(mat_data["alphaTestEnable"])).lower()
     if "doubleSided" in mat_data:
         ET.SubElement(root, "doubleSided").text = str(bool(mat_data["doubleSided"])).lower()
+    if "zBufferWrite" in mat_data:
+        ET.SubElement(root, "zBufferWrite").text = str(bool(mat_data["zBufferWrite"])).lower()
+    if "castShadow" in mat_data:
+        ET.SubElement(root, "castShadow").text = str(bool(mat_data["castShadow"])).lower()
+    if "receiveShadow" in mat_data:
+        ET.SubElement(root, "receiveShadow").text = str(bool(mat_data["receiveShadow"])).lower()
 
+    # 写出文件
     write_xml_file(root, filepath)
     logger.info(f".mfm written: {filepath}")
