@@ -4,7 +4,6 @@
 import xml.etree.ElementTree as ET
 from ..utils.logger import get_logger
 from ..utils.xml_writer import write_xml_file
-from ..utils.validation import ValidationError
 
 logger = get_logger("model_format")
 
@@ -26,7 +25,7 @@ def export_model_file(filepath, model_data):
       - actions: list of {
             name, animation, blendInTime, blendOutTime,
             track?, isMovement?, isCoordinated?, isImpacting?,
-            match_trigger?, match_cancel?,
+            match_trigger?: dict, match_cancel?: dict,
             scalePlaybackSpeed?, feetFollowDirection?,
             oneShot?, promoteMotion?
         }
@@ -36,9 +35,7 @@ def export_model_file(filepath, model_data):
 
     root = ET.Element("model")
 
-    # ----------------------------
     # metaData
-    # ----------------------------
     meta = ET.SubElement(root, "metaData")
     ET.SubElement(meta, "copyright").text = (
         "Copyright BigWorld Pty Ltd. Use freely in any BigWorld licensed game."
@@ -48,14 +45,10 @@ def export_model_file(filepath, model_data):
     ET.SubElement(meta, "modified_by").text = "blender_exporter"
     ET.SubElement(meta, "modified_on").text = "0"
 
-    # ----------------------------
     # Visual reference
-    # ----------------------------
     ET.SubElement(root, "nodefullVisual").text = model_data.get("visual", "")
 
-    # ----------------------------
-    # Material names (optional)
-    # ----------------------------
+    # Material names
     mats = model_data.get("materialNames", [])
     if mats:
         mat_elem = ET.SubElement(root, "materialNames")
@@ -64,26 +57,18 @@ def export_model_file(filepath, model_data):
     else:
         ET.SubElement(root, "materialNames").text = ""
 
-    # ----------------------------
     # Visibility box
-    # ----------------------------
     visbox = ET.SubElement(root, "visibilityBox")
     ET.SubElement(visbox, "min").text = model_data.get("bbox_min", "-1.0 -1.0 -1.0")
     ET.SubElement(visbox, "max").text = model_data.get("bbox_max", "1.0 1.0 1.0")
 
-    # ----------------------------
     # Extent
-    # ----------------------------
     ET.SubElement(root, "extent").text = f"{model_data.get('extent', 10.0):.6f}"
 
-    # ----------------------------
     # Parent
-    # ----------------------------
     ET.SubElement(root, "parent").text = model_data.get("parent", "")
 
-    # ----------------------------
     # Animations
-    # ----------------------------
     anims = model_data.get("animations", [])
     if anims:
         anims_elem = ET.SubElement(root, "animations")
@@ -99,9 +84,7 @@ def export_model_file(filepath, model_data):
             if "cognate" in a:
                 ET.SubElement(anim_elem, "cognate").text = str(bool(a["cognate"])).lower()
 
-    # ----------------------------
     # Actions
-    # ----------------------------
     acts = model_data.get("actions", [])
     if acts:
         acts_elem = ET.SubElement(root, "actions")
@@ -117,7 +100,7 @@ def export_model_file(filepath, model_data):
             ET.SubElement(act_elem, "isCoordinated").text = str(ac.get("isCoordinated", False)).lower()
             ET.SubElement(act_elem, "isImpacting").text = str(ac.get("isImpacting", False)).lower()
 
-            # match.trigger / cancel
+            # match.trigger / cancel (optional structured)
             if "match_trigger" in ac or "match_cancel" in ac:
                 match_elem = ET.SubElement(act_elem, "match")
                 if "match_trigger" in ac:
@@ -139,15 +122,11 @@ def export_model_file(filepath, model_data):
             if "promoteMotion" in ac:
                 ET.SubElement(act_elem, "promoteMotion").text = str(ac["promoteMotion"]).lower()
 
-    # ----------------------------
-    # EditorOnly / BSP
-    # ----------------------------
+    # EditorOnly / BSP reference
     editor = ET.SubElement(root, "editorOnly")
     bsp = ET.SubElement(editor, "bspModels")
     ET.SubElement(bsp, "model").text = model_data.get("bsp_model", "")
 
-    # ----------------------------
     # Write XML
-    # ----------------------------
     write_xml_file(root, filepath)
     logger.info(f".model written: {filepath}")
