@@ -1,9 +1,11 @@
 # 文件位置: bigworld_blender_exporter/ui/panels.py
-# UI Panel definitions for BigWorld exporter
+# -*- coding: utf-8 -*-
+"""
+UI Panel definitions for BigWorld exporter
+"""
 
 import bpy
-from bpy.types import Panel, UIList
-from ..formats.vertex_formats import list_formats
+from bpy.types import Panel
 
 
 class BIGWORLD_PT_export_panel(Panel):
@@ -93,14 +95,8 @@ class BIGWORLD_PT_model_settings(Panel):
         col = box.column(align=True)
         col.prop(settings, "apply_modifiers", text="Apply Modifiers 应用修改器")
         col.prop(settings, "triangulate_mesh", text="Triangulate 三角化")
-        col.prop(settings, "optimize_mesh", text="Optimize 优化")
         col.separator()
-        col.prop(settings, "smoothing_angle", text="Smoothing 平滑角度")
-
-        # Vertex format dropdown
         col.prop(settings, "vertex_format", text="Format 格式")
-
-        # Index strategy
         col.prop(settings, "use_32bit_index", text="Force 32-bit Indices 强制32位索引")
 
         # Data export
@@ -135,7 +131,6 @@ class BIGWORLD_PT_animation_settings(Panel):
         col.prop(settings, "frame_rate", text="Frame Rate 帧率")
         col.prop(settings, "start_frame", text="Start Frame 起始帧")
         col.prop(settings, "end_frame", text="End Frame 结束帧")
-        col.prop(settings, "bake_animation", text="Bake Animation 烘焙动画")
         col.prop(settings, "optimize_keyframes", text="Optimize Keyframes 优化关键帧")
         col.prop(settings, "loop_animation", text="Loop 循环")
         col.prop(settings, "cognate", text="Cognate 同源")
@@ -144,7 +139,9 @@ class BIGWORLD_PT_animation_settings(Panel):
         # Markers UI
         col.label(text="Markers 事件标记:")
         row = col.row()
-        row.template_list("UI_UL_list", "bw_animation_markers", settings, "markers", settings, "marker_index")
+        row.template_list("UI_UL_list", "bw_animation_markers",
+                          settings, "markers",
+                          settings, "marker_index")
         col.operator("bigworld.add_marker", text="Add Marker 添加标记")
         col.operator("bigworld.remove_marker", text="Remove Marker 删除标记")
 
@@ -172,53 +169,18 @@ class BIGWORLD_PT_material_settings(Panel):
         col = box.column(align=True)
         col.prop(settings, "texture_path", text="Texture Path 贴图路径")
         col.prop(settings, "copy_textures", text="Copy Textures 复制贴图")
-        col.prop(settings, "convert_to_dds", text="Convert to DDS 转DDS")
+        col.prop(settings, "convert_to_dds", text="Convert to DDS 转换DDS")
 
         # 扩展属性
         col.separator()
         col.prop(settings, "alphaTestEnable", text="Alpha Test 启用透明测试")
         col.prop(settings, "doubleSided", text="Double Sided 双面渲染")
         col.prop(settings, "collisionFlags", text="Collision Flags 碰撞标志")
+        col.prop(settings, "zBufferWrite", text="Z Buffer Write 深度写入")
+        col.prop(settings, "castShadow", text="Cast Shadow 投射阴影")
+        col.prop(settings, "receiveShadow", text="Receive Shadow 接收阴影")
 
 
-# 高级设置面板
-class BIGWORLD_PT_advanced_settings(Panel):
-    """Advanced settings panel"""
-    bl_label = "Advanced Settings"
-    bl_idname = "BIGWORLD_PT_advanced_settings"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = "BigWorld"
-    bl_parent_id = "BIGWORLD_PT_export_panel"
-    bl_options = {'DEFAULT_CLOSED'}
-
-    def draw(self, context):
-        layout = self.layout
-        settings = context.scene.bw_exporter
-
-        # Performance settings
-        box = layout.box()
-        box.label(text="Performance 性能:", icon='PREFERENCES')
-        col = box.column(align=True)
-        col.prop(settings, "optimize_mesh", text="Optimize Mesh 优化网格")
-        col.prop(settings, "optimize_keyframes", text="Optimize Keyframes 优化关键帧")
-
-        # File settings
-        box = layout.box()
-        box.label(text="File Settings 文件设置:", icon='FILE')
-        col = box.column(align=True)
-        col.prop(settings, "copy_textures", text="Copy Textures 复制贴图")
-        col.prop(settings, "convert_to_dds", text="Convert to DDS 转DDS")
-
-        # Debug settings
-        box = layout.box()
-        box.label(text="Debug 调试:", icon='CONSOLE')
-        col = box.column(align=True)
-        col.prop(settings, "export_vertex_colors", text="Export Vertex Colors 导出顶点色")
-        col.prop(settings, "export_tangents", text="Export Tangents 导出切线")
-
-
-# 批量导出面板
 class BIGWORLD_PT_batch_export(Panel):
     """Batch export panel"""
     bl_label = "Batch Export"
