@@ -1,84 +1,116 @@
 # 文件位置: bigworld_blender_exporter/core/model_processor.py
-# Model data processing for BigWorld export (aligned to official .primitives/.visual requirements)
+# -*- coding: utf-8 -*-
+"""
+Model data processing for BigWorld export (aligned to official .primitives/.visual requirements)
+
+改进点：
+- 集成 collision_processor，生成 BSP 数据
+- 集成 hardpoint_processor，收集 HardPoints 和 Portals
+- 输出结构中增加 bsp_data / hardpoints / portals
+"""
 
 import bpy
 import bmesh
 from mathutils import Vector
+from typing import Dict, Any
 from ..utils import logger, math_utils
 from ..utils.validation import validate_mesh
 from .. import config
+from .collision_processor import CollisionProcessor
+from .hardpoint_processor import HardpointProcessor
+
+LOG = logger.get_logger("model_processor")
 
 
 class ModelProcessor:
     """负责模型数据的收集与处理"""
 
     def __init__(self):
-        pass
+        self.collision_proc = CollisionProcessor()
+        self.hp_proc = HardpointProcessor()
 
-    def process(self, obj, settings):
-            """
-            收集并处理一个 Blender Mesh 对象，返回用于 .primitives/.visual 的数据包。
-            返回结构：
-              {
-                "vertices": List[Dict],          # 每顶点属性：position/normal/uv/tangent/binormal/bone_idx/bone_w
-                "indices": List[int],            # 三角形索引，按材质分组但连续写入
-                "primitive_groups": List[Tuple], # (startIndex, numPrims, startVertex, numVertices)
-                "bbox_min": "x y z",
-                "bbox_max": "x y z",
-                "extent": float,
-                "vertex_count": int,
-                "triangle_count": int,
-                "has_armature": bool,
-                "materials": List[Dict],         # [{ name, index }]
-              }
-            """
-            logger.info(f"Processing mesh object: {obj.name}")
+    def process(self, obj, settings) -> Dict[str, Any]:
+        """
+        收集并处理一个 Blender Mesh 对象，返回用于 .primitives/.visual 的数据包。
 
-            # 验证
-            valid, msg = validate_mesh(obj)
-            if not valid:
-                logger.error(f"Mesh validation failed for {obj.name}: {msg}")
-                return None
+        返回结构：
+        {
+          "vertices": List[Dict],
+          "indices": List[int],
+          "primitive_groups": List[Tuple],
+          "bbox_min": "x y z",
+          "bbox_max": "x y z",
+          "extent": float,
+          "vertex_count": int,
+          "triangle_count": int,
+          "has_armature": bool,
+          "materials": List[Dict],
+          "bsp_data": Dict,          # 碰撞 BSP 数据
+          "hardpoints": List[Dict],  # HP_ 前缀对象
+          "portals": List[Dict],     # PORTAL_ 前缀对象
+        }
+        """
+        LOG.info(f"Processing mesh object: {obj.name}")
 
-            mesh = obj.data
+        # 验证
+        valid, msg = validate_mesh(obj)
+        if not valid:
+            LOG.error(f"Mesh validation failed for {obj.name}: {msg}")
+            return None
 
-            # 应用 modifiers
-            if getattr(settings, "apply_modifiers", True):
-                mesh = self._apply_modifiers(obj, mesh)
+        mesh = obj.data
 
-            # 三角化
-            if getattr(settings, "triangulate_mesh", True):
-                mesh = self._triangulate_mesh(mesh)
+        # 应用 modifiers
+        if getattr(settings, "apply_modifiers", True):
+            mesh = self._apply_modifiers(obj, mesh)
 
-            # 计算三角形与切线
-            mesh.calc_loop_triangles()
-            self._ensure_tangents(mesh)
+        # 三角化
+        if getattr(settings, "triangulate_mesh", True):
+            mesh = self._triangulate_mesh(mesh)
 
-            # 收集几何数据
-            vertices, indices, groups = self._collect_geometry(obj, mesh, settings)
+        # 计算三角形与切线
+        mesh.calc_loop_triangles()
+        self._ensure_tangents(mesh)
 
-            # 计算包围盒与 extent（字符串形式符合 .visual/.model）
-            bbox_min_vec, bbox_max_vec = math_utils.calculate_bounding_box(vertices)
-            extent = math_utils.calculate_extent(bbox_min_vec, bbox_max_vec)
-            bbox_min = f"{bbox_min_vec[0]:.6f} {bbox_min_vec[1]:.6f} {bbox_min_vec[2]:.6f}"
-            bbox_max = f"{bbox_max_vec[0]:.6f} {bbox_max_vec[1]:.6f} {bbox_max_vec[2]:.6f}"
+        # 收集几何数据
+        vertices, indices, groups = self._collect_geometry(obj, mesh, settings)
 
-            model_data = {
-                "vertices": vertices,
-                "indices": indices,
-                "primitive_groups": groups,
-                "bbox_min": bbox_min,
-                "bbox_max": bbox_max,
-                "extent": extent,
-                "vertex_count": len(vertices),
-                "triangle_count": len(indices) // 3,
-                "has_armature": obj.find_armature() is not None,
-                "materials": self._collect_materials(obj),
-            }
+        # 计算包围盒与 extent
+        bbox_min_vec, bbox_max_vec = math_utils.calculate_bounding_box(vertices)
+        extent = math_utils.calculate_extent(bbox_min_vec, bbox_max_vec)
+        bbox_min = f"{bbox_min_vec[0]:.6f} {bbox_min_vec[1]:.6f} {bbox_min_vec[2]:.6f}"
+        bbox_max = f"{bbox_max_vec[0]:.6f} {bbox_max_vec[1]:.6f} {bbox_max_vec[2]:.6f}"
 
-            logger.info(f"Processed {len(vertices)} vertices and {len(indices)} indices for {obj.name}")
-            return model_data
+        # 碰撞 BSP
+        bsp_data = {}
+        if getattr(settings, "export_collision", True):
+            bsp_data = self.collision_proc.collect_bsp_for_object(obj)
 
+        # HardPoints & Portals
+        hp_portals = self.hp_proc.collect(obj)
+
+        model_data = {
+            "vertices": vertices,
+            "indices": indices,
+            "primitive_groups": groups,
+            "bbox_min": bbox_min,
+            "bbox_max": bbox_max,
+            "extent": extent,
+            "vertex_count": len(vertices),
+            "triangle_count": len(indices) // 3,
+            "has_armature": obj.find_armature() is not None,
+            "materials": self._collect_materials(obj),
+            "bsp_data": bsp_data,
+            "hardpoints": hp_portals.get("hardpoints", []),
+            "portals": hp_portals.get("portals", []),
+        }
+
+        LOG.info(f"Processed {len(vertices)} vertices and {len(indices)} indices for {obj.name}")
+        return model_data
+
+    # ------------------------
+    # Internal helpers
+    # ------------------------
     def _apply_modifiers(self, obj, mesh):
         depsgraph = bpy.context.evaluated_depsgraph_get()
         obj_eval = obj.evaluated_get(depsgraph)
@@ -93,31 +125,24 @@ class ModelProcessor:
         return mesh
 
     def _ensure_tangents(self, mesh):
-        # 在有 UV 的情况下计算切线，以便写入 .primitives
         if mesh.uv_layers.active:
             try:
                 mesh.calc_tangents()
             except Exception:
-                # 某些情况下（无足够 UV/法线）会失败，保持切线为空即可
                 pass
 
     def _collect_geometry(self, obj, mesh, settings):
         vertices = []
         indices = []
         primitive_groups = []
-
         uv_layer = mesh.uv_layers.active.data if mesh.uv_layers.active else None
         armature = obj.find_armature()
         vertex_groups = obj.vertex_groups if obj.vertex_groups else None
 
-        # 按材质分组，跟踪组起始与统计
         mat_to_group = {}
 
-        # 遍历每个三角形
         for tri in mesh.loop_triangles:
             mat_index = tri.material_index if tri.material_index is not None else -1
-
-            # 初始化材质组
             if mat_index not in mat_to_group:
                 mat_to_group[mat_index] = {
                     "startIndex": len(indices),
@@ -127,7 +152,6 @@ class ModelProcessor:
                     "material": self._material_name(obj, mat_index),
                 }
 
-            # 为三角形的3个顶点构建顶点数据
             tri_vertex_indices = []
             for loop_index in tri.loops:
                 loop = mesh.loops[loop_index]
@@ -138,7 +162,7 @@ class ModelProcessor:
                 if getattr(settings, "coordinate_system", "Z_UP") == "Y_UP":
                     pos = math_utils.convert_position(pos)
 
-                # 法线（优先用 loop.normal）
+                # 法线
                 nrm = list(loop.normal) if hasattr(loop, "normal") else list(v.normal)
                 if getattr(settings, "coordinate_system", "Z_UP") == "Y_UP":
                     nrm = math_utils.convert_direction(nrm)
@@ -154,9 +178,6 @@ class ModelProcessor:
                 if hasattr(loop, "tangent"):
                     t = Vector(loop.tangent)
                     tangent = [t.x, t.y, t.z]
-
-                    # binormal 由法线与切线计算，并考虑 bitangent_sign
-                    # b = sign * normalize(cross(n, t))
                     try:
                         n_vec = Vector(nrm).normalized()
                         t_vec = t.normalized()
@@ -167,7 +188,7 @@ class ModelProcessor:
                     except Exception:
                         pass
 
-                # 骨骼权重（最多3个）
+                # 骨骼权重
                 bone_idx = [0, 0, 0]
                 bone_w = [0.0, 0.0, 0.0]
                 if armature and vertex_groups:
@@ -177,28 +198,21 @@ class ModelProcessor:
                 vertex_data = {
                     "position": pos,
                     "normal": nrm,
-                    "uv0": uv,            # primitives_format 支持 uv0/uv
+                    "uv0": uv,
                     "tangent": tangent,
                     "binormal": binormal,
-                    "bone_idx": bone_idx, # 原始索引（后续在 primitives_format 中量化）
-                    "bone_w": bone_w,     # 原始权重（后续在 primitives_format 中量化）
+                    "bone_idx": bone_idx,
+                    "bone_w": bone_w,
                 }
-
                 vertices.append(vertex_data)
                 tri_vertex_indices.append(len(vertices) - 1)
 
-            # 将三角形索引写入（顺序为 0,1,2）
             indices.extend(tri_vertex_indices)
-
-            # 三角形计数 +1（不是每个顶点）
             mat_to_group[mat_index]["numPrims"] += 1
-
-            # 更新组内顶点数量
             mat_to_group[mat_index]["numVertices"] = (
                 len(vertices) - mat_to_group[mat_index]["startVertex"]
             )
 
-        # 转换为 (startIdx, numPrims, startVtx, numVtx) 结构
         for g in mat_to_group.values():
             primitive_groups.append(
                 (g["startIndex"], g["numPrims"], g["startVertex"], g["numVertices"])
@@ -206,61 +220,49 @@ class ModelProcessor:
 
         return vertices, indices, primitive_groups
 
-    def _get_vertex_bone_weights(self, vertex, vertex_groups, armature):
-        """提取一个顶点的骨骼权重（最多3个，归一化）"""
+        def _get_vertex_bone_weights(self, vertex, vertex_groups, armature):
+        """
+        收集单个顶点的骨骼索引和权重，最多保留前三个影响。
+        返回 dict: { "indices": [i0,i1,i2], "weights": [w0,w1,w2] }
+        """
         influences = []
         for g in vertex.groups:
             if g.weight > 0:
                 group_name = vertex_groups[g.group].name
-                bone_index = self._find_bone_index(armature, group_name)
+                # 在 armature 中找到对应骨骼索引
+                bone_index = -1
+                if group_name in armature.data.bones:
+                    bone_index = list(armature.data.bones.keys()).index(group_name)
                 if bone_index >= 0:
                     influences.append((bone_index, g.weight))
 
-        # 取前三个最大权重
+        # 按权重排序，取前三个
         influences.sort(key=lambda x: x[1], reverse=True)
         influences = influences[:3]
 
-        # 归一化
-        total = sum(w for _, w in influences)
+        indices = [0, 0, 0]
+        weights = [0.0, 0.0, 0.0]
+        for i, (idx, w) in enumerate(influences):
+            indices[i] = idx
+            weights[i] = w
+
+        # 归一化权重
+        total = sum(weights)
         if total > 0:
-            influences = [(i, w / total) for i, w in influences]
+            weights = [w / total for w in weights]
 
-        # 填充到3个
-        bone_indices = [i for i, _ in influences] + [0] * (3 - len(influences))
-        bone_weights = [w for _, w in influences] + [0.0] * (3 - len(influences))
-
-        return {"indices": bone_indices, "weights": bone_weights}
-
-    def _find_bone_index(self, armature, bone_name):
-        for i, bone in enumerate(armature.data.bones):
-            if bone.name == bone_name:
-                return i
-        return -1
-
-    def _collect_materials(self, obj):
-        materials = []
-        for i, mat_slot in enumerate(obj.material_slots):
-            if mat_slot.material:
-                mat = mat_slot.material
-                materials.append({
-                    "name": mat.name,
-                    "index": i,
-                })
-        return materials
+        return {"indices": indices, "weights": weights}
 
     def _material_name(self, obj, mat_index):
-        if mat_index is None or mat_index < 0:
-            return ""
-        try:
-            slot = obj.material_slots[mat_index]
-            return slot.material.name if slot and slot.material else ""
-        except Exception:
-            return ""
+        if mat_index < 0 or mat_index >= len(obj.material_slots):
+            return "default"
+        mat = obj.material_slots[mat_index].material
+        return mat.name if mat else "default"
 
-
-def register():
-    pass
-
-
-def unregister():
-    pass
+    def _collect_materials(self, obj):
+        """收集对象的材质名称列表"""
+        mats = []
+        for slot in obj.material_slots:
+            if slot.material:
+                mats.append(slot.material.name)
+        return mats
