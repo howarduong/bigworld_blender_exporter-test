@@ -23,6 +23,7 @@ def export_animation_file(filepath, animation_data):
       - loop: bool
       - cognate: bool
       - alpha: bool
+      - markers: optional list of { time: float, name: str }  # 可选事件标记
     """
     logger.info(f"Exporting animation file: {filepath}")
 
@@ -39,6 +40,7 @@ def export_animation_file(filepath, animation_data):
         _write_header(f, animation_data)
         _write_bones(f, animation_data["bones"])
         _write_keyframes(f, animation_data["keyframes"], animation_data["bones"])
+        _write_markers(f, animation_data.get("markers", []))
 
 
 def _write_header(f, anim):
@@ -92,9 +94,7 @@ def _write_bones(f, bones):
         # Name
         bname = bone["name"][:31].encode("ascii", errors="ignore")
         f.write(bname)
-        f.write(b"\0" * (32 - len(bname))
-
-        )
+        f.write(b"\0" * (32 - len(bname)))
         # Parent index
         parent_index = -1
         parent_name = bone.get("parent")
@@ -138,17 +138,22 @@ def _write_keyframes(f, keyframes, bones):
                 raise ValidationError(f"Invalid scale for bone '{bname}' at frame {kf.get('frame')}")
 
             # Position
-            write_f32(f, float(pos[0]))
-            write_f32(f, float(pos[1]))
-            write_f32(f, float(pos[2]))
-
-            # Rotation (x, y, z, w) — must match AnimationProcessor output
-            write_f32(f, float(rot[0]))
-            write_f32(f, float(rot[1]))
-            write_f32(f, float(rot[2]))
-            write_f32(f, float(rot[3]))
-
+            write_f32(f, float(pos[0])); write_f32(f, float(pos[1])); write_f32(f, float(pos[2]))
+            # Rotation (x, y, z, w)
+            write_f32(f, float(rot[0])); write_f32(f, float(rot[1])); write_f32(f, float(rot[2])); write_f32(f, float(rot[3]))
             # Scale
-            write_f32(f, float(scl[0]))
-            write_f32(f, float(scl[1]))
-            write_f32(f, float(scl[2]))
+            write_f32(f, float(scl[0])); write_f32(f, float(scl[1])); write_f32(f, float(scl[2]))
+
+
+def _write_markers(f, markers):
+    """
+    Optional marker table:
+      - markerCount: u32
+      - For each marker: time f32, name[32] ASCII
+    """
+    write_u32(f, len(markers))
+    for m in markers:
+        write_f32(f, float(m.get("time", 0.0)))
+        name_bytes = str(m.get("name", ""))[:31].encode("ascii", errors="ignore")
+        f.write(name_bytes)
+        f.write(b"\0" * (32 - len(name_bytes)))
