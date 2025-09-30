@@ -1,3 +1,142 @@
+一、教学文档（流程与操作指南）
+https://howarduong.github.io/github.io/doc/documentation_roadmap.html
+
+内容：完整的教学文档，包含 BigWorld 引擎的教学流程。
+
+用途：作为整体学习路线图，理解 BigWorld 内容制作与导出流程的全貌。
+
+重点参考：
+
+模型导出流程
+
+动画导出流程
+
+材质与贴图处理流程
+
+与 3ds Max/Maya 插件的对比
+
+https://howarduong.github.io/github.io/content_creation_page.html
+
+内容：关于模型创建的教学文档。
+
+用途：指导如何从建模到导出，特别是模型文件的生成步骤。
+
+重点参考：
+
+模型创建规范
+
+导出前的准备工作
+
+Blender 插件需要对齐的功能点
+
+二、BigWorld 引擎源码
+https://github.com/howarduong/BigWorld-Engine-2.0.1.git
+
+内容：BigWorld 引擎的完整源码。
+
+用途：
+
+工具源码部分包含 3ds Max 与 Maya 插件源码。
+
+部分基础源数据文件中包含了对 .model、.visual、.mfm、.primitives 等格式的描述。
+
+是最权威的参考，确保导出插件与引擎完全兼容。
+
+https://github.com/howarduong/BigWorld-Engine-2.0.1/tree/481e69a837a9f6d63f298a4f24d423b6329226c6/src/tools
+
+内容：引擎工具源码目录。
+
+用途：
+
+包含模型相关的导出工具源码。
+
+可能有 Max/Maya 插件的实现。
+
+关键：这里的代码能直接揭示官方导出器如何生成 .model、.visual、.mfm、.primitives。
+
+三、标准文件示例（明文格式）
+https://github.com/howarduong/github.io/blob/main/base.model
+
+内容：基础 .model 文件（明文）。
+
+用途：
+
+展示 .model 文件的标准写法、语法和格式。
+
+可作为我们导出 .model 的对照模板。
+
+重点参考：
+
+根标签 <ModelName.model>
+
+<nodefullVisual> 的写法（相对路径，不带扩展名）
+
+<materialNames> 的写法
+
+<visibilityBox> 与 <extent>
+
+https://github.com/howarduong/github.io/blob/main/base.visual
+
+内容：基础 .visual 文件（明文）。
+
+用途：
+
+展示 .visual 文件的标准结构。
+
+重点参考：
+
+<vertices> 与 <primitive> 的写法（引用 .primitives 内的 section 名）
+
+<primitiveGroup> 与 <material> 的写法
+
+<fx> 与 <property> 的写法
+
+<boundingBox> 的写法
+
+https://github.com/howarduong/github.io/blob/main/handrails.mfm
+
+内容：材质文件 .mfm 示例。
+
+用途：
+
+展示 .mfm 的标准写法。
+
+重点参考：
+
+根标签 <MaterialName.mfm>
+
+<fx> 的写法
+
+<property> 与 <Texture> 的写法
+
+四、Blender 插件开发仓库
+https://github.com/howarduong/bigworld_blender_exporter-test
+
+内容：你正在开发的 Blender 插件源码仓库。
+
+用途：
+
+我们需要在这里实现 .model、.visual、.mfm、.primitives、.animation 的导出功能。
+
+需要对齐官方标准，参考上面提供的示例文件和引擎源码。
+
+重点参考：
+
+core/exporter.py：主导出逻辑
+
+formats/*.py：各文件格式的生成逻辑
+
+utils/*.py：工具函数（xml_writer、binary_writer、path_utils 等）
+
+✅ 总结
+教学文档（1、2）：提供流程和操作指导。
+
+引擎源码（3、4）：提供官方实现和格式定义，是最权威的参考。
+
+标准示例文件（5、6、7）：提供 .model、.visual、.mfm 的标准写法，直接作为导出对照模板。
+
+插件源码（8）：我们需要在这里实现导出功能，并逐步对齐官方标准。
+
 我有一个游戏引擎，但是现在我面临一个问题就是这个引擎由于过于老旧，其中的模型插件部分支持早期的3dmax和maya版本。现在我的需求是我希望能够在blender4.5.3版本中能够实现它的功能，也就是实现我导出模型 骨骼 贴图 以及动画等内容到这个引擎中，让这个引擎能够正确识别加载使用模型。那么现在我有这个引擎的教学文档，我需要你学习一下，它的整个模型导出构建流程，还有模型的相关数据写法参数等等，作为参考来帮我构建这个blender插件。现在我提供给你相关的信息，https://howarduong.github.io/github.io/doc/documentation_roadmap.html 这是完整的教学文档它包含了所有的教学流程作。https://howarduong.github.io/github.io/content_creation_page.html 这里是关于模型创建的教学文档和作。https://github.com/howarduong/BigWorld-Engine-2.0.1.git 这是引擎的全部源码，其中工具源码部分应该包含了3dmax 与maya 插件的源码，同时其中一些基础源数据应该包含了对格式的描述。https://github.com/howarduong/github.io/blob/main/base.model 这是一个基础模型的明文内容，里面应该包含一些标准的写法语法以及格式。https://github.com/howarduong/github.io/blob/main/base.visual 这是模型的配套文件，也是明文的，当然也包含了标准的写法语法以及格式。https://github.com/howarduong/github.io/blob/main/handrails.mfm 这个文件我不知道作用有多大应该也很重要。https://github.com/howarduong/BigWorld-Engine-2.0.1/tree/481e69a837a9f6d63f298a4f24d423b6329226c6/src/tools 这里应该就是它的模型相关源码内容。所有的这些资料你都可以检索查看学习用于实现我们本次要达成的目标。现在我在明确一下我的需求，我需要你给我一份插件设计方案，需要包含这个插件的目录结构，架构，以及写法思路，还有在我们的blender中要有ui界面，能够直接为我们直观的使用，最好是贴合3dmax 功能差不多的复刻，而且要考虑到3dmax中我们的软件运行流程与blender中应该是有差异的，所以要注意按照blender4.5.3版本的语法，标准和写法来设计这个插件。最终的目的是我们要在blender4.5.3版本中正确导入这个插件，并且能够设定bigworld的一些参数要求，然后最终能够导出为bigworldengine能够正确加载的模型 动画 骨骼 贴图 等模型数据。现在你给我出第一版方案吧
 
 
