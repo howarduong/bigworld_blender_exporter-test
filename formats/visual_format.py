@@ -1,75 +1,100 @@
 # 文件位置: bigworld_blender_exporter/formats/visual_format.py
-# Visual file format for BigWorld export
+# Visual file format for BigWorld export (aligned to official grammar)
 
-from ..utils.xml_writer import create_visual_xml, write_xml_file
+import xml.etree.ElementTree as ET
 from ..utils.logger import get_logger
+from ..utils.xml_writer import write_xml_file
+from ..utils.math_utils import blender_to_bigworld_matrix
+from ..utils.validation import ValidationError
 
 logger = get_logger("visual_format")
 
-def export_visual_file(filepath, visual_data):
-    """Export visual data to BigWorld .visual file"""
-    logger.info(f"Exporting visual file: {filepath}")
-    
-    # Create XML structure（严格对齐BigWorld标准）
-    import xml.etree.ElementTree as ET
-    root = ET.Element('visual')
-    # node树（静态模型用root节点，骨骼模型可扩展）
-    node = ET.SubElement(root, 'node')
-    ET.SubElement(node, 'identifier').text = visual_data.get('node', 'root')
-    transform = ET.SubElement(node, 'transform')
-    ET.SubElement(transform, 'row0').text = '1.000000 0.000000 0.000000'
-    ET.SubElement(transform, 'row1').text = '0.000000 1.000000 0.000000'
-    ET.SubElement(transform, 'row2').text = '0.000000 0.000000 1.000000'
-    ET.SubElement(transform, 'row3').text = '0.000000 0.000000 0.000000'
-    # renderSet
-    rset = ET.SubElement(root, 'renderSet')
-    ET.SubElement(rset, 'treatAsWorldSpaceObject').text = str(visual_data.get('world_space', 'false')).lower()
-    ET.SubElement(rset, 'node').text = visual_data.get('node', 'root')
-    geometry = ET.SubElement(rset, 'geometry')
-    # 相对路径文件名
-    vertices_name = visual_data.get('primitives', '').replace('.primitives', '.vertices').split('/')[-1]
-    indices_name = visual_data.get('primitives', '').replace('.primitives', '.indices').split('/')[-1]
-    ET.SubElement(geometry, 'vertices').text = vertices_name
-    ET.SubElement(geometry, 'primitive').text = indices_name
-    # primitiveGroup
-    prim_group = ET.SubElement(geometry, 'primitiveGroup')
-    prim_group.text = '0'
-    # 嵌套材质信息（最简化，实际可扩展）
-    mat = ET.SubElement(prim_group, 'material')
-    ET.SubElement(mat, 'identifier').text = visual_data.get('material', '').replace('.mfm', '')
-    ET.SubElement(mat, 'fx').text = 'shaders/std_effects.fx'
-    # boundingBox
-    bbox = ET.SubElement(root, 'boundingBox')
-    ET.SubElement(bbox, 'min').text = visual_data.get('bbox_min', '-1.0 -1.0 -1.0')
-    ET.SubElement(bbox, 'max').text = visual_data.get('bbox_max', '1.0 1.0 1.0')
-    # Write XML file
-    from ..utils.xml_writer import write_xml_file
-    write_xml_file(root, filepath)
 
-def export_visual_file_legacy(filepath, visual_data):
-    """Legacy visual export function for backward compatibility"""
-    logger.warning("Using legacy visual export format")
-    
-    from ..utils.xml_writer import create_xml_root, add_xml_child, write_xml_file
-    
-    root = create_xml_root()
-    render_set = add_xml_child(root, 'renderSet')
-    add_xml_child(render_set, 'treatAsWorldSpaceObject', str(visual_data.get('world_space', 'false')))
-    add_xml_child(render_set, 'node', visual_data.get('node', 'root'))
-    
-    geometry = add_xml_child(render_set, 'geometry')
-    add_xml_child(geometry, 'vertices', visual_data.get('primitives', ''))
-    add_xml_child(geometry, 'primitive', 'triangles')
-    
-    group = add_xml_child(geometry, 'primitiveGroup')
-    add_xml_child(group, 'material', visual_data.get('material', ''))
-    add_xml_child(group, 'startIndex', str(visual_data.get('start_index', 0)))
-    add_xml_child(group, 'endIndex', str(visual_data.get('end_index', 0)))
-    add_xml_child(group, 'startVertex', str(visual_data.get('start_vertex', 0)))
-    add_xml_child(group, 'endVertex', str(visual_data.get('end_vertex', 0)))
-    
-    bbox = add_xml_child(root, 'boundingBox')
-    add_xml_child(bbox, 'min', visual_data.get('bbox_min', '-1.0 -1.0 -1.0'))
-    add_xml_child(bbox, 'max', visual_data.get('bbox_max', '1.0 1.0 1.0'))
-    
+def export_visual_file(filepath, visual_data):
+    """
+    Export visual data to BigWorld .visual file
+
+    visual_data dict expected keys:
+      - nodes: list of { 'name': str, 'matrix': 4x4 list[list[float]] }
+      - world_space: bool
+      - primitives: str (path to .primitives file)
+      - primitive_groups: list of { 'material': str, 'fx': str, 'materialKind': str,
+                                    'startIndex': int, 'numPrims': int,
+                                    'startVertex': int, 'numVertices': int }
+      - bbox_min: "x y z"
+      - bbox_max: "x y z"
+    """
+    logger.info(f"Exporting visual file: {filepath}")
+
+    root = ET.Element("visual")
+
+    # ----------------------------
+    # Node tree
+    # ----------------------------
+    if "nodes" not in visual_data or not visual_data["nodes"]:
+        raise ValidationError("visual_data must contain at least one node")
+
+    for node_data in visual_data["nodes"]:
+        node = ET.SubElement(root, "node")
+        ET.SubElement(node, "identifier").text = node_data["name"]
+
+        transform = ET.SubElement(node, "transform")
+        mat = blender_to_bigworld_matrix(node_data["matrix"])
+        for i in range(4):
+            row = " ".join(f"{mat[i][j]:.6f}" for j in range(4))
+            ET.SubElement(transform, f"row{i}").text = row
+
+    # ----------------------------
+    # Render set
+    # ----------------------------
+    rset = ET.SubElement(root, "renderSet")
+    ET.SubElement(rset, "treatAsWorldSpaceObject").text = (
+        "true" if visual_data.get("world_space", False) else "false"
+    )
+
+    # attach first node as default
+    ET.SubElement(rset, "node").text = visual_data["nodes"][0]["name"]
+
+    geometry = ET.SubElement(rset, "geometry")
+
+    # vertices/primitive references (relative names)
+    prim_file = visual_data.get("primitives", "")
+    if not prim_file.endswith(".primitives"):
+        raise ValidationError("visual_data.primitives must be a .primitives file path")
+
+    base_name = prim_file.replace(".primitives", "")
+    ET.SubElement(geometry, "vertices").text = base_name + ".vertices"
+    ET.SubElement(geometry, "primitive").text = base_name + ".indices"
+
+    # primitive groups
+    groups = visual_data.get("primitive_groups", [])
+    if not groups:
+        raise ValidationError("visual_data must contain primitive_groups")
+
+    for g in groups:
+        group = ET.SubElement(geometry, "primitiveGroup")
+
+        mat_elem = ET.SubElement(group, "material")
+        ET.SubElement(mat_elem, "identifier").text = g.get("material", "").replace(".mfm", "")
+        ET.SubElement(mat_elem, "fx").text = g.get("fx", "shaders/std_effects.fx")
+        if "materialKind" in g:
+            ET.SubElement(mat_elem, "materialKind").text = g["materialKind"]
+
+        # group stats
+        ET.SubElement(group, "startIndex").text = str(g.get("startIndex", 0))
+        ET.SubElement(group, "numPrimitives").text = str(g.get("numPrims", 0))
+        ET.SubElement(group, "startVertex").text = str(g.get("startVertex", 0))
+        ET.SubElement(group, "numVertices").text = str(g.get("numVertices", 0))
+
+    # ----------------------------
+    # Bounding box
+    # ----------------------------
+    bbox = ET.SubElement(root, "boundingBox")
+    ET.SubElement(bbox, "min").text = visual_data.get("bbox_min", "-1.0 -1.0 -1.0")
+    ET.SubElement(bbox, "max").text = visual_data.get("bbox_max", "1.0 1.0 1.0")
+
+    # ----------------------------
+    # Write XML
+    # ----------------------------
     write_xml_file(root, filepath)
+    logger.info(f".visual written: {filepath}")
