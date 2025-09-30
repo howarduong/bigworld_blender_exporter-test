@@ -1,5 +1,5 @@
 # 文件位置: bigworld_blender_exporter/formats/visual_format.py
-# Visual file format for BigWorld export (aligned to official grammar, with LOD support)
+# Visual file format for BigWorld export (aligned to official grammar, with LOD/HardPoints/Portals)
 
 import xml.etree.ElementTree as ET
 from ..utils.logger import get_logger
@@ -28,14 +28,14 @@ def export_visual_file(filepath, visual_data):
             'primitives': str,
             'primitive_groups': list[dict]
         }
+      - hardpoints: optional list of { 'identifier': str, 'matrix': 4x4 list[list[float]] }
+      - portals: optional list of { 'identifier': str, 'vertices': list[(x,y,z)] }
     """
     logger.info(f"Exporting visual file: {filepath}")
 
     root = ET.Element("visual")
 
-    # ----------------------------
     # Node tree
-    # ----------------------------
     if "nodes" not in visual_data or not visual_data["nodes"]:
         raise ValidationError("visual_data must contain at least one node")
 
@@ -49,9 +49,7 @@ def export_visual_file(filepath, visual_data):
             row = " ".join(f"{mat[i][j]:.6f}" for j in range(4))
             ET.SubElement(transform, f"row{i}").text = row
 
-    # ----------------------------
     # LOD support
-    # ----------------------------
     lods = visual_data.get("lods", [])
     if lods:
         # lodDistances
@@ -66,16 +64,36 @@ def export_visual_file(filepath, visual_data):
         # single renderSet
         _write_render_set(root, visual_data)
 
-    # ----------------------------
+    # HardPoints
+    hardpoints = visual_data.get("hardpoints", [])
+    if hardpoints:
+        hp_section = ET.SubElement(root, "hardPoints")
+        for hp in hardpoints:
+            h = ET.SubElement(hp_section, "hardPoint")
+            ET.SubElement(h, "identifier").text = hp["identifier"]
+            transform = ET.SubElement(h, "transform")
+            mat = blender_to_bigworld_matrix(hp["matrix"])
+            for i in range(4):
+                row = " ".join(f"{mat[i][j]:.6f}" for j in range(4))
+                ET.SubElement(transform, f"row{i}").text = row
+
+    # Portals
+    portals = visual_data.get("portals", [])
+    if portals:
+        p_section = ET.SubElement(root, "portals")
+        for p in portals:
+            pe = ET.SubElement(p_section, "portal")
+            ET.SubElement(pe, "identifier").text = p["identifier"]
+            verts_elem = ET.SubElement(pe, "vertices")
+            for v in p["vertices"]:
+                ET.SubElement(verts_elem, "v").text = f"{v[0]:.6f} {v[1]:.6f} {v[2]:.6f}"
+
     # Bounding box
-    # ----------------------------
     bbox = ET.SubElement(root, "boundingBox")
     ET.SubElement(bbox, "min").text = visual_data.get("bbox_min", "-1.0 -1.0 -1.0")
     ET.SubElement(bbox, "max").text = visual_data.get("bbox_max", "1.0 1.0 1.0")
 
-    # ----------------------------
     # Write XML
-    # ----------------------------
     write_xml_file(root, filepath)
     logger.info(f".visual written: {filepath}")
 
