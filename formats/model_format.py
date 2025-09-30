@@ -19,12 +19,17 @@ def export_model_file(filepath, model_data):
       - extent: float
       - parent: str
       - bsp_model: str
-      - animations: list of { name, nodes, frameRate, firstFrame, lastFrame, alpha?, cognate? }
-      - actions: list of { name, animation, blendInTime, blendOutTime, track?,
-                           isMovement, isCoordinated, isImpacting,
-                           match_trigger?, match_cancel?,
-                           scalePlaybackSpeed?, feetFollowDirection?,
-                           oneShot?, promoteMotion? }
+      - animations: list of {
+            name, nodes, frameRate, firstFrame, lastFrame,
+            alpha?: bool, cognate?: bool
+        }
+      - actions: list of {
+            name, animation, blendInTime, blendOutTime,
+            track?, isMovement?, isCoordinated?, isImpacting?,
+            match_trigger?, match_cancel?,
+            scalePlaybackSpeed?, feetFollowDirection?,
+            oneShot?, promoteMotion?
+        }
       - materialNames: list[str] (optional)
     """
     logger.info(f"Exporting model file: {filepath}")
@@ -90,9 +95,9 @@ def export_model_file(filepath, model_data):
             ET.SubElement(anim_elem, "firstFrame").text = str(a.get("firstFrame", 0))
             ET.SubElement(anim_elem, "lastFrame").text = str(a.get("lastFrame", 0))
             if "alpha" in a:
-                ET.SubElement(anim_elem, "alpha").text = a["alpha"]
+                ET.SubElement(anim_elem, "alpha").text = str(bool(a["alpha"])).lower()
             if "cognate" in a:
-                ET.SubElement(anim_elem, "cognate").text = a["cognate"]
+                ET.SubElement(anim_elem, "cognate").text = str(bool(a["cognate"])).lower()
 
     # ----------------------------
     # Actions
@@ -111,6 +116,7 @@ def export_model_file(filepath, model_data):
             ET.SubElement(act_elem, "isMovement").text = str(ac.get("isMovement", False)).lower()
             ET.SubElement(act_elem, "isCoordinated").text = str(ac.get("isCoordinated", False)).lower()
             ET.SubElement(act_elem, "isImpacting").text = str(ac.get("isImpacting", False)).lower()
+
             # match.trigger / cancel
             if "match_trigger" in ac or "match_cancel" in ac:
                 match_elem = ET.SubElement(act_elem, "match")
@@ -122,6 +128,7 @@ def export_model_file(filepath, model_data):
                     canc = ET.SubElement(match_elem, "cancel")
                     for k, v in ac["match_cancel"].items():
                         ET.SubElement(canc, k).text = str(v)
+
             # optional flags
             if "scalePlaybackSpeed" in ac:
                 ET.SubElement(act_elem, "scalePlaybackSpeed").text = str(ac["scalePlaybackSpeed"]).lower()
