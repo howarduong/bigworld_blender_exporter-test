@@ -1,126 +1,141 @@
 # 文件位置: bigworld_blender_exporter/utils/validation.py
-# Data validation utilities for BigWorld export
+# Validation utilities for BigWorld exporter
 
-import bpy
-from .. import config
-from .logger import get_logger
+import os
+from ..utils.logger import get_logger
 
 logger = get_logger("validation")
 
+
+class ValidationError(Exception):
+    pass
+
+
+# ----------------------------
+# Mesh / Armature validation
+# ----------------------------
+
 def validate_mesh(obj):
-    """Validate mesh object for export"""
-    if not hasattr(obj.data, 'vertices'):
-        return False, config.ERROR_NO_MESH
-    if len(obj.data.vertices) > config.MAX_VERTICES_PER_MESH:
-        return False, config.ERROR_TOO_MANY_VERTICES
-    if len(obj.data.polygons) * 3 > config.MAX_TRIANGLES_PER_MESH:
-        return False, config.ERROR_TOO_MANY_TRIANGLES
+    if obj.type != "MESH":
+        return False, "Object is not a mesh"
+    if not obj.data.vertices:
+        return False, "Mesh has no vertices"
+    if not obj.data.polygons:
+        return False, "Mesh has no faces"
     if not obj.data.uv_layers:
-        return False, config.ERROR_NO_UV
-    return True, None
+        logger.warning(f"Mesh {obj.name} has no UV layer")
+    return True, ""
+
 
 def validate_armature(obj):
-    """Validate armature object for export"""
-    if obj.type != 'ARMATURE':
-        return False, "Object is not an armature (对象不是骨架)"
-    
-    armature = obj.data
-    if len(armature.bones) > config.MAX_BONES:
-        return False, config.ERROR_INVALID_BONE_COUNT
-    
-    return True, None
+    if obj.type != "ARMATURE":
+        return False, "Object is not an armature"
+    if not obj.data.bones:
+        return False, "Armature has no bones"
+    return True, ""
 
-def validate_scene(context):
-    """Validate entire scene for export"""
-    issues = []
-    
-    # Check for objects to export
-    objects_to_check = []
-    if context.scene.bigworld_export.export_selected:
-        objects_to_check = [obj for obj in context.selected_objects if obj.type in ['MESH', 'ARMATURE']]
-    else:
-        objects_to_check = [obj for obj in context.scene.objects if obj.type in ['MESH', 'ARMATURE']]
-    
-    if not objects_to_check:
-        issues.append("No objects to export (没有可导出的对象)")
-        return issues
-    
-    # Validate each object
-    for obj in objects_to_check:
-        if obj.type == 'MESH':
-            valid, msg = validate_mesh(obj)
-            if not valid:
-                issues.append(f"{obj.name}: {msg}")
-        elif obj.type == 'ARMATURE':
-            valid, msg = validate_armature(obj)
-            if not valid:
-                issues.append(f"{obj.name}: {msg}")
-    
-    # Check for materials
-    for obj in objects_to_check:
-        if obj.type == 'MESH' and not obj.data.materials:
-            issues.append(f"{obj.name}: {config.WARNING_NO_MATERIAL}")
-    
-    # Check for UV layers
-    for obj in objects_to_check:
-        if obj.type == 'MESH' and len(obj.data.uv_layers) > 1:
-            issues.append(f"{obj.name}: {config.WARNING_MULTIPLE_UV}")
-    
-    return issues
 
-def fix_scene(context):
-    """Auto-fix common export issues"""
-    fixes_applied = 0
-    
-    # Get objects to fix
-    objects_to_fix = []
-    if context.scene.bigworld_export.export_selected:
-        objects_to_fix = [obj for obj in context.selected_objects if obj.type in ['MESH', 'ARMATURE']]
-    else:
-        objects_to_fix = [obj for obj in context.scene.objects if obj.type in ['MESH', 'ARMATURE']]
-    
-    for obj in objects_to_fix:
-        if obj.type == 'MESH':
-            # Fix mesh issues
-            mesh = obj.data
-            
-            # Add default material if none
-            if not mesh.materials:
-                mat = bpy.data.materials.new(name=f"{obj.name}_Material")
-                mat.use_nodes = True
-                mesh.materials.append(mat)
-                fixes_applied += 1
-                logger.info(f"Added default material to {obj.name}")
-            
-            # Add UV layer if none
-            if not mesh.uv_layers:
-                mesh.uv_layers.new(name="UVMap")
-                fixes_applied += 1
-                logger.info(f"Added UV layer to {obj.name}")
-            
-            # Triangulate if needed
-            if not all(len(poly.vertices) == 3 for poly in mesh.polygons):
-                bpy.context.view_layer.objects.active = obj
-                bpy.ops.object.mode_set(mode='EDIT')
-                bpy.ops.mesh.select_all(action='SELECT')
-                bpy.ops.mesh.quads_convert_to_tris()
-                bpy.ops.object.mode_set(mode='OBJECT')
-                fixes_applied += 1
-                logger.info(f"Triangulated {obj.name}")
-    
-    return fixes_applied
+# ----------------------------
+# Primitives validation
+# ----------------------------
 
-def validate_export_settings(settings):
-    """Validate export settings"""
-    issues = []
-    
-    if not settings.export_path:
-        issues.append("Export path not set (未设置导出路径)")
-    
-    if settings.global_scale <= 0:
-        issues.append("Invalid scale value (无效的缩放值)")
-    
-    if settings.start_frame >= settings.end_frame:
-        issues.append("Invalid frame range (无效的帧范围)")
-    
-    return issues
+def validate_primitives(vertices, indices, primitive_groups):
+    if not vertices:
+        raise ValidationError("No vertices in primitives")
+    if not indices:
+        raise ValidationError("No indices in primitives")
+    if not primitive_groups:
+        raise ValidationError("No primitive groups in primitives")
+
+    max_index = max(indices)
+    if max_index >= len(vertices):
+        raise ValidationError(f"Index {max_index} exceeds vertex count {len(vertices)}")
+
+    # check groups
+    for g in primitive_groups:
+        start_idx, num_prims, start_vtx, num_vtx = (
+            g["startIndex"], g["numPrims"], g["startVertex"], g["numVertices"]
+        )
+        if start_idx + num_prims * 3 > len(indices):
+            raise ValidationError(f"Primitive group exceeds index buffer length")
+        if start_vtx + num_vtx > len(vertices):
+            raise ValidationError(f"Primitive group exceeds vertex buffer length")
+
+
+# ----------------------------
+# Visual validation
+# ----------------------------
+
+def validate_visual(visual_data, export_root):
+    if "nodes" not in visual_data or not visual_data["nodes"]:
+        raise ValidationError("Visual has no nodes")
+    if "primitives" not in visual_data:
+        raise ValidationError("Visual missing primitives reference")
+    prim_path = os.path.join(export_root, visual_data["primitives"])
+    if not os.path.exists(prim_path):
+        logger.warning(f"Primitives file not found: {prim_path}")
+
+    groups = visual_data.get("primitive_groups", [])
+    if not groups:
+        raise ValidationError("Visual has no primitive groups")
+    for g in groups:
+        if "material" not in g or not g["material"]:
+            logger.warning("Primitive group missing material reference")
+        else:
+            mat_path = os.path.join(export_root, g["material"])
+            if not os.path.exists(mat_path):
+                logger.warning(f"Material file not found: {mat_path}")
+
+
+# ----------------------------
+# Model validation
+# ----------------------------
+
+def validate_model(model_data, export_root):
+    if "visual" not in model_data:
+        raise ValidationError("Model missing visual reference")
+    vis_path = os.path.join(export_root, model_data["visual"])
+    if not os.path.exists(vis_path):
+        logger.warning(f"Visual file not found: {vis_path}")
+
+    for anim in model_data.get("animations", []):
+        if "nodes" not in anim:
+            raise ValidationError("Animation entry missing nodes path")
+        anim_path = os.path.join(export_root, anim["nodes"])
+        if not os.path.exists(anim_path):
+            logger.warning(f"Animation file not found: {anim_path}")
+        if anim.get("frameRate", 0) <= 0:
+            raise ValidationError("Animation frameRate must be > 0")
+        if anim.get("lastFrame", 0) < anim.get("firstFrame", 0):
+            raise ValidationError("Animation lastFrame < firstFrame")
+
+
+# ----------------------------
+# Material validation
+# ----------------------------
+
+def validate_material(material_data):
+    if "identifier" not in material_data:
+        raise ValidationError("Material missing identifier")
+    if "fx" not in material_data:
+        raise ValidationError("Material missing fx shader path")
+    if "materialKind" not in material_data:
+        raise ValidationError("Material missing materialKind")
+
+    for p in material_data.get("properties", []):
+        if "name" not in p or "type" not in p or "value" not in p:
+            raise ValidationError("Material property missing fields")
+        if p["type"] == "Vector4":
+            if not (isinstance(p["value"], (list, tuple)) and len(p["value"]) == 4):
+                raise ValidationError(f"Property {p['name']} must be Vector4 of length 4")
+        if p["type"] == "Float":
+            try:
+                float(p["value"])
+            except Exception:
+                raise ValidationError(f"Property {p['name']} must be float")
+        if p["type"] == "Bool":
+            if not isinstance(p["value"], (bool, int)):
+                raise ValidationError(f"Property {p['name']} must be bool")
+        if p["type"] == "Int":
+            if not isinstance(p["value"], int):
+                raise ValidationError(f"Property {p['name']} must be int")
