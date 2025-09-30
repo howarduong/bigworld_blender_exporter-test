@@ -1,5 +1,13 @@
 # 文件位置: bigworld_blender_exporter/formats/model_format.py
-# Model file format for BigWorld export (aligned to official grammar)
+# -*- coding: utf-8 -*-
+"""
+BigWorld .model writer (aligned to official grammar)
+
+改进点：
+- animations 增加 loop 标志
+- actions 扩展 caps/priority/track 等字段
+- match.trigger/cancel 支持完整键值
+"""
 
 import xml.etree.ElementTree as ET
 from ..utils.logger import get_logger
@@ -20,11 +28,12 @@ def export_model_file(filepath, model_data):
       - bsp_model: str
       - animations: list of {
             name, nodes, frameRate, firstFrame, lastFrame,
-            alpha?: bool, cognate?: bool
+            alpha?: bool, cognate?: bool, loop?: bool
         }
       - actions: list of {
             name, animation, blendInTime, blendOutTime,
-            track?, isMovement?, isCoordinated?, isImpacting?,
+            track?, priority?, caps?,
+            isMovement?, isCoordinated?, isImpacting?,
             match_trigger?: dict, match_cancel?: dict,
             scalePlaybackSpeed?, feetFollowDirection?,
             oneShot?, promoteMotion?
@@ -83,6 +92,8 @@ def export_model_file(filepath, model_data):
                 ET.SubElement(anim_elem, "alpha").text = str(bool(a["alpha"])).lower()
             if "cognate" in a:
                 ET.SubElement(anim_elem, "cognate").text = str(bool(a["cognate"])).lower()
+            if "loop" in a:
+                ET.SubElement(anim_elem, "loop").text = str(bool(a["loop"])).lower()
 
     # Actions
     acts = model_data.get("actions", [])
@@ -96,11 +107,15 @@ def export_model_file(filepath, model_data):
             ET.SubElement(act_elem, "blendOutTime").text = str(ac.get("blendOutTime", 0.1))
             if "track" in ac:
                 ET.SubElement(act_elem, "track").text = str(ac["track"])
+            if "priority" in ac:
+                ET.SubElement(act_elem, "priority").text = str(ac["priority"])
+            if "caps" in ac:
+                ET.SubElement(act_elem, "caps").text = str(ac["caps"])
             ET.SubElement(act_elem, "isMovement").text = str(ac.get("isMovement", False)).lower()
             ET.SubElement(act_elem, "isCoordinated").text = str(ac.get("isCoordinated", False)).lower()
             ET.SubElement(act_elem, "isImpacting").text = str(ac.get("isImpacting", False)).lower()
 
-            # match.trigger / cancel (optional structured)
+            # match.trigger / cancel
             if "match_trigger" in ac or "match_cancel" in ac:
                 match_elem = ET.SubElement(act_elem, "match")
                 if "match_trigger" in ac:
