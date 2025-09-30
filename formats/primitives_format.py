@@ -15,9 +15,14 @@ Sections (in order):
    - u32: number_of_primitive_groups
    - raw_index_data: serialized indices (LE, 16-bit or 32-bit)
    - raw_primitive_data: for each group, four u32 in order: startIdx, numPrims, startVtx, numVtx
+
+3) BSP Data Section (optional):
+   - 64 bytes: "bsp" identifier ASCII, zero padded
+   - u32: nodeCount
+   - u32: triangleCount
+   - nodes + triangles payload
 """
 
-import struct
 from typing import List, Dict, Tuple
 from .vertex_formats import get_vertex_format, VertexFormat
 from ..utils.vertex_compression import (
@@ -31,13 +36,11 @@ from ..utils.binary_writer import (
 )
 from ..utils.logger import get_logger
 from ..utils.validation import ValidationError
+from .bsp_format import write_bsp_section
 
 logger = get_logger("primitives_format")
 
 
-# ----------------------------
-# Public API
-# ----------------------------
 def export_primitives_file(
     filepath: str,
     vertices: List[Dict],
@@ -45,9 +48,10 @@ def export_primitives_file(
     primitive_groups: List[Tuple[int, int, int, int]],
     vertex_format_name: str = "xyznuvtb",
     use_32bit_index: bool = False,
+    bsp_data: Dict = None,
 ) -> None:
     """
-    Write a .primitives file with vertex and index sections.
+    Write a .primitives file with vertex, index, and optional BSP sections.
 
     Parameters:
       - filepath: output path (will create parent directories)
@@ -56,11 +60,12 @@ def export_primitives_file(
       - primitive_groups: list of tuples (startIdx, numPrims, startVtx, numVtx)
       - vertex_format_name: identifier registered in formats/vertex_formats.py
       - use_32bit_index: True to force 32-bit indices ("list32"), otherwise 16-bit ("list")
+      - bsp_data: optional collision BSP payload, appended after index section
     """
     fmt = get_vertex_format(vertex_format_name)
     logger.info(
         f"Export .primitives: {filepath} | fmt={fmt.identifier} | verts={len(vertices)} | "
-        f"idx={len(indices)} | groups={len(primitive_groups)}"
+        f"idx={len(indices)} | groups={len(primitive_groups)} | bsp={'yes' if bsp_data else 'no'}"
     )
 
     _validate_inputs(vertices, indices, primitive_groups, fmt)
@@ -69,11 +74,10 @@ def export_primitives_file(
     with open(filepath, "wb") as f:
         _write_vertex_section(f, vertices, fmt)
         _write_index_section(f, indices, primitive_groups, use_32bit_index)
+        if bsp_data is not None:
+            write_bsp_section(f, bsp_data)
 
 
-# ----------------------------
-# Input validation
-# ----------------------------
 def _validate_inputs(
     vertices: List[Dict],
     indices: List[int],
@@ -120,9 +124,6 @@ def _validate_inputs(
             )
 
 
-# ----------------------------
-# Sections writing
-# ----------------------------
 def _pad_64bytes_ascii(name: str) -> bytes:
     b = name.encode("ascii", errors="strict")
     if len(b) > 64:
@@ -164,9 +165,6 @@ def _write_index_section(
         write_u32(f, numVtx)
 
 
-# ----------------------------
-# Vertex packing
-# ----------------------------
 def _write_vertex(f, vtx: Dict, fmt: VertexFormat) -> None:
     """Serialize one vertex according to the chosen VertexFormat."""
     for attr in fmt.attributes:
@@ -194,63 +192,25 @@ def _write_vertex(f, vtx: Dict, fmt: VertexFormat) -> None:
         elif attr.name == "bone_w":
             # expects a list of weights (float)
             w0, w1, w2 = quantize_weights_3(
-              vtx.get("bone_w") or vtx.get("bone_weights") or []
+                vtx.get("bone_w") or vtx.get("bone_weights") or []
             )
-            # we only store w0, w1; w2 is implied by sum=255
+            # we only store w0, w1; w2 is implied by sum=255, i.e. w2 = 255 - (w0 + w1)
             write_u8(f, w0)
             write_u8(f, w1)
-       else:
+        else:
             raise ValidationError(f"Unsupported vertex attribute in layout: {attr.name}")
 
 
-
-
-# ----------------------------
-# Debug / CLI entry (optional)
-# ----------------------------
 if __name__ == "__main__":
-    # Simple self-test: write a dummy .primitives with 1 triangle
+    # Simple self-test: write a dummy .primitives with 1 triangle (no BSP)
     import os
-
     test_vertices = [
-        {
-            "position": (0.0, 0.0, 0.0),
-            "normal": (0.0, 0.0, 1.0),
-            "uv0": (0.0, 0.0),
-            "tangent": (1.0, 0.0, 0.0),
-            "binormal": (0.0, 1.0, 0.0),
-        },
-        {
-            "position": (1.0, 0.0, 0.0),
-            "normal": (0.0, 0.0, 1.0),
-            "uv0": (1.0, 0.0),
-            "tangent": (1.0, 0.0, 0.0),
-            "binormal": (0.0, 1.0, 0.0),
-        },
-        {
-            "position": (0.0, 1.0, 0.0),
-            "normal": (0.0, 0.0, 1.0),
-            "uv0": (0.0, 1.0),
-            "tangent": (1.0, 0.0, 0.0),
-            "binormal": (0.0, 1.0, 0.0),
-        },
+        {"position": (0.0, 0.0, 0.0), "normal": (0.0, 0.0, 1.0), "uv0": (0.0, 0.0), "tangent": (1.0, 0.0, 0.0), "binormal": (0.0, 1.0, 0.0)},
+        {"position": (1.0, 0.0, 0.0), "normal": (0.0, 0.0, 1.0), "uv0": (1.0, 0.0), "tangent": (1.0, 0.0, 0.0), "binormal": (0.0, 1.0, 0.0)},
+        {"position": (0.0, 1.0, 0.0), "normal": (0.0, 0.0, 1.0), "uv0": (0.0, 1.0), "tangent": (1.0, 0.0, 0.0), "binormal": (0.0, 1.0, 0.0)},
     ]
     test_indices = [0, 1, 2]
-    test_groups = [(0, 1, 0, 3)]  # one triangle group
-
+    test_groups = [(0, 1, 0, 3)]
     out_path = os.path.join(os.path.dirname(__file__), "test_output.primitives")
-    try:
-        export_primitives_file(
-            out_path,
-            test_vertices,
-            test_indices,
-            test_groups,
-            vertex_format_name="xyznuvtb",
-            use_32bit_index=False,
-        )
-        print(f"Dummy .primitives written to {out_path}")
-    except Exception as e:
-        import traceback
-
-        print("Error during test export:", e)
-        traceback.print_exc()
+    export_primitives_file(out_path, test_vertices, test_indices, test_groups, "xyznuvtb", False, bsp_data=None)
+    print(f"Dummy .primitives written to {out_path}")
