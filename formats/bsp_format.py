@@ -40,8 +40,8 @@ def write_bsp_section(f, bsp_data: Dict) -> None:
 
     If bsp_data is empty or missing keys, this function writes an empty section header with zero counts.
     """
-    nodes = bsp_data.get("nodes", [])
-    triangles = bsp_data.get("triangles", [])
+    nodes = bsp_data.get("nodes", []) if bsp_data else []
+    triangles = bsp_data.get("triangles", []) if bsp_data else []
 
     # Identifier
     write_bytes(f, _pad_64bytes_ascii(BSP_IDENTIFIER))
@@ -58,20 +58,12 @@ def write_bsp_section(f, bsp_data: Dict) -> None:
         triStart = int(n.get("triStart", 0))
         triCount = int(n.get("triCount", 0))
 
-        write_f32(f, float(plane[0]))
-        write_f32(f, float(plane[1]))
-        write_f32(f, float(plane[2]))
-        write_f32(f, float(plane[3]))
-
-        f.write(struct.pack("<i", childA))
-        f.write(struct.pack("<i", childB))
-        write_u32(f, triStart)
-        write_u32(f, triCount)
+        write_f32(f, float(plane[0])); write_f32(f, float(plane[1])); write_f32(f, float(plane[2])); write_f32(f, float(plane[3]))
+        f.write(struct.pack("<i", childA)); f.write(struct.pack("<i", childB))
+        write_u32(f, triStart); write_u32(f, triCount)
 
     # Triangles
     for t in triangles:
         if len(t) != 3:
             raise ValidationError(f"BSP triangle must have 3 indices, got: {t}")
-        write_u32(f, int(t[0]))
-        write_u32(f, int(t[1]))
-        write_u32(f, int(t[2]))
+        write_u32(f, int(t[0])); write_u32(f, int(t[1])); write_u32(f, int(t[2]))
