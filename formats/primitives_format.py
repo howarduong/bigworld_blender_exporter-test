@@ -1,163 +1,282 @@
-# 文件位置: bigworld_blender_exporter/formats/primitives_format.py
-# Primitives file format for BigWorld export
+# formats/primitives_format.py
+# -*- coding: utf-8 -*-
+"""
+BigWorld .primitives writer aligned to official section layout.
+
+Sections (in order):
+1) Vertex Data Section:
+   - 64 bytes: vertex format identifier ASCII, zero padded
+   - u32: number_of_vertices
+   - raw_vertex_data: serialized per-vertex bytes (layout depends on format)
+
+2) Index Data Section:
+   - 64 bytes: index format identifier ASCII ("list" for 16-bit, "list32" for 32-bit), zero padded
+   - u32: number_of_indices
+   - u32: number_of_primitive_groups
+   - raw_index_data: serialized indices (LE, 16-bit or 32-bit)
+   - raw_primitive_data: for each group, four u32 in order:
+       startIdx, numPrims, startVtx, numVtx
+
+This file expects vertices to be provided as dictionaries with keys matching the chosen
+vertex format, and indices & primitive groups to be precomputed by core/model_processor.
+"""
 
 import struct
-from ..config import PRIMITIVES_MAGIC, VERTEX_FORMATS
-from ..utils.binary_writer import write_uint32, write_bytes, create_directory
+from typing import List, Dict, Tuple
+
+from .vertex_formats import get_vertex_format, VertexFormat, VertexAttribute
+from ..utils.vertex_compression import (
+    compress_dir_to_u16x2,
+    quantize_weights_3,
+    quantize_indices_3,
+    pack_uv,
+)
+from ..utils.binary_writer import (
+    write_bytes,
+    write_u8,
+    write_u16,
+    write_u32,
+    write_f32,
+)
 from ..utils.logger import get_logger
+from ..utils.validation import ValidationError  # assumed existing, raise on invalid inputs
+from ..utils.binary_writer import create_directory  # ensure parent dirs
 
 logger = get_logger("primitives_format")
 
-def export_primitives_file(filepath, vertices, indices, vertex_format='STANDARD'):
-    """Export vertex and index data to BigWorld .primitives file"""
-    logger.info(f"Exporting primitives file: {filepath}")
-    
-    # Create directory if it doesn't exist
+
+# ----------------------------
+# Public API
+# ----------------------------
+
+def export_primitives_file(
+    filepath: str,
+    vertices: List[Dict],
+    indices: List[int],
+    primitive_groups: List[Tuple[int, int, int, int]],
+    vertex_format_name: str = "xyznuvtb",
+    use_32bit_index: bool = False,
+) -> None:
+    """
+    Write a .primitives file with vertex and index sections.
+
+    Parameters:
+    - filepath: output path (will create parent directories)
+    - vertices: list of per-vertex dictionaries, must contain required attributes for the chosen format
+    - indices: list of triangle indices (flattened), contiguous per group
+    - primitive_groups: list of tuples (startIdx, numPrims, startVtx, numVtx)
+    - vertex_format_name: identifier registered in formats/vertex_formats.py
+    - use_32bit_index: True to force 32-bit indices ("list32"), otherwise 16-bit ("list")
+
+    Raises:
+    - ValidationError if input data is inconsistent with counts or format requirements
+    """
+    fmt = get_vertex_format(vertex_format_name)
+    logger.info(f"Export .primitives: {filepath} | fmt={fmt.identifier} | verts={len(vertices)} | idx={len(indices)} | groups={len(primitive_groups)}")
+
+    _validate_inputs(vertices, indices, primitive_groups, fmt)
+
     create_directory(filepath)
-    
-    # Determine vertex size from packing to avoid header mismatch
-    vertex_size = 0
-    if vertices:
-        vertex_size = len(pack_vertex_data(vertices[0], vertex_format))
-    
-    with open(filepath, 'wb') as f:
-        # Write header (using computed vertex_size)
-        write_primitives_header(f, vertices, indices, vertex_size, vertex_format)
-        
-        # Write vertex data
-        write_vertex_buffer(f, vertices, vertex_format)
-        
-        # Write index data
-        write_index_buffer(f, indices)
+    with open(filepath, "wb") as f:
+        _write_vertex_section(f, vertices, fmt)
+        _write_index_section(f, indices, primitive_groups, use_32bit_index)
 
-def write_primitives_header(f, vertices, indices, vertex_size, vertex_format):
-    """Write primitives file header"""
-    # Magic number
-    write_uint32(f, PRIMITIVES_MAGIC)
-    
-    # Format string (64 bytes, null-padded)
-    fmt_str = VERTEX_FORMATS[vertex_format]['format'].encode('ascii').ljust(64, b'\0')
-    write_bytes(f, fmt_str)
-    
-    # Vertex count
-    write_uint32(f, len(vertices))
-    
-    # Index count
-    write_uint32(f, len(indices))
-    
-    # Vertex size in bytes
-    write_uint32(f, vertex_size)
-    
-    # Padding to align to 16-byte boundary
-    f.write(b'\0' * 4)
 
-def write_vertex_buffer(f, vertices, vertex_format):
-    """Write vertex buffer data"""
-    logger.info(f"Writing {len(vertices)} vertices in {vertex_format} format")
-    
-    for vertex in vertices:
-        # Pack vertex data according to format
-        packed_vertex = pack_vertex_data(vertex, vertex_format)
-        write_bytes(f, packed_vertex)
+# ----------------------------
+# Input validation
+# ----------------------------
 
-def write_index_buffer(f, indices):
-    """Write index buffer data"""
-    logger.info(f"Writing {len(indices)} indices")
-    
-    for index in indices:
-        # Write as 16-bit unsigned integer
-        f.write(struct.pack('<H', index))
+def _validate_inputs(
+    vertices: List[Dict],
+    indices: List[int],
+    primitive_groups: List[Tuple[int, int, int, int]],
+    fmt: VertexFormat,
+) -> None:
+    # vertices present
+    if len(vertices) == 0:
+        raise ValidationError("No vertices provided for .primitives export")
 
-def pack_vertex_data(vertex_data, format_type='STANDARD'):
-    """Pack vertex data according to BigWorld format"""
-    if format_type == 'SIMPLE':
-        return pack_simple_vertex(vertex_data)
-    elif format_type == 'SKINNED':
-        return pack_skinned_vertex(vertex_data)
-    else:  # STANDARD
-        return pack_standard_vertex(vertex_data)
+    # check vertex attributes presence
+    required_keys = {a.name for a in fmt.attributes}
+    for i, vtx in enumerate(vertices):
+        missing = [k for k in required_keys if k not in vtx]
+        if missing:
+            raise ValidationError(f"Vertex {i} missing attributes for format '{fmt.identifier}': {missing}")
 
-def pack_simple_vertex(vertex_data):
-    """Pack simple vertex format: xyznuv"""
-    data = bytearray()
-    
-    # Position (x, y, z) - 3 * float32
-    pos = vertex_data['position']
-    data.extend(struct.pack('<fff', pos[0], pos[1], pos[2]))
-    
-    # Normal (n) - short2 (compressed)
-    from ..utils.math_utils import compress_normal
-    normal = compress_normal(vertex_data['normal'])
-    data.extend(normal)
-    
-    # UV (u, v) - 2 * float32
-    uv = vertex_data['uv']
-    data.extend(struct.pack('<ff', uv[0], uv[1]))
-    
-    return bytes(data)
+    # index sanity
+    if len(indices) == 0:
+        raise ValidationError("No indices provided for .primitives export")
+    if any(ix < 0 for ix in indices):
+        raise ValidationError("Indices must be non-negative")
+    max_ix = max(indices)
+    if max_ix >= len(vertices):
+        raise ValidationError(f"Index {max_ix} exceeds vertex count {len(vertices)}")
 
-def pack_skinned_vertex(vertex_data):
-    """Pack skinned vertex format: xyznuviiiww"""
-    data = bytearray()
-    
-    # Position (x, y, z) - 3 * float32
-    pos = vertex_data['position']
-    data.extend(struct.pack('<fff', pos[0], pos[1], pos[2]))
-    
-    # Normal (n) - short2 (compressed)
-    from ..utils.math_utils import compress_normal
-    normal = compress_normal(vertex_data['normal'])
-    data.extend(normal)
-    
-    # UV (u, v) - 2 * float32
-    uv = vertex_data['uv']
-    data.extend(struct.pack('<ff', uv[0], uv[1]))
-    
-    # Bone indices (i, i, i) - 3 * uint8
-    bone_indices = vertex_data['bone_indices']
-    data.extend(struct.pack('<BBB', bone_indices[0], bone_indices[1], bone_indices[2]))
-    
-    # Bone weights (w, w) - 2 * uint8 (third weight calculated)
-    bone_weights = vertex_data['bone_weights']
-    w1 = int(bone_weights[0] * 255)
-    w2 = int(bone_weights[1] * 255)
-    data.extend(struct.pack('<BB', w1, w2))
-    
-    return bytes(data)
+    # primitive groups sanity
+    if len(primitive_groups) == 0:
+        raise ValidationError("No primitive groups provided; at least one group is required")
+    for gidx, (startIdx, numPrims, startVtx, numVtx) in enumerate(primitive_groups):
+        if startIdx < 0 or numPrims <= 0 or startVtx < 0 or numVtx <= 0:
+            raise ValidationError(f"Primitive group {gidx} has invalid stats: {(startIdx, numPrims, startVtx, numVtx)}")
+        # indices range check: each triangle uses 3 indices
+        end_idx_byte = startIdx + numPrims * 3 - 1
+        if end_idx_byte >= len(indices):
+            raise ValidationError(f"Primitive group {gidx} exceeds index buffer length: end={end_idx_byte}, len={len(indices)}")
+        # vertices range check
+        end_vtx = startVtx + numVtx - 1
+        if end_vtx >= len(vertices):
+            raise ValidationError(f"Primitive group {gidx} exceeds vertex buffer length: end={end_vtx}, len={len(vertices)}")
 
-def pack_standard_vertex(vertex_data):
-    """Pack standard vertex format: xyznuviiiwwtb"""
-    data = bytearray()
-    
-    # Position (x, y, z) - 3 * float32
-    pos = vertex_data['position']
-    data.extend(struct.pack('<fff', pos[0], pos[1], pos[2]))
-    
-    # Normal (n) - short2 (compressed)
-    from ..utils.math_utils import compress_normal, compress_tangent, compress_binormal
-    normal = compress_normal(vertex_data['normal'])
-    data.extend(normal)
-    
-    # UV (u, v) - 2 * float32
-    uv = vertex_data['uv']
-    data.extend(struct.pack('<ff', uv[0], uv[1]))
-    
-    # Bone indices (i, i, i) - 3 * uint8
-    bone_indices = vertex_data['bone_indices']
-    data.extend(struct.pack('<BBB', bone_indices[0], bone_indices[1], bone_indices[2]))
-    
-    # Bone weights (w, w) - 2 * uint8
-    bone_weights = vertex_data['bone_weights']
-    w1 = int(bone_weights[0] * 255)
-    w2 = int(bone_weights[1] * 255)
-    data.extend(struct.pack('<BB', w1, w2))
-    
-    # Tangent (t) - short2 (compressed)
-    tangent = compress_tangent(vertex_data['tangent'])
-    data.extend(tangent)
-    
-    # Binormal (b) - short2 (compressed)
-    binormal = compress_binormal(vertex_data['binormal'])
-    data.extend(binormal)
-    
-    return bytes(data)
+
+# ----------------------------
+# Sections writing
+# ----------------------------
+
+def _pad_64bytes_ascii(name: str) -> bytes:
+    b = name.encode("ascii", errors="strict")
+    if len(b) > 64:
+        raise ValidationError(f"Identifier exceeds 64 bytes: {name}")
+    return b.ljust(64, b"\x00")
+
+def _write_vertex_section(f, vertices: List[Dict], fmt: VertexFormat) -> None:
+    # header
+    write_bytes(f, _pad_64bytes_ascii(fmt.identifier))
+    write_u32(f, len(vertices))
+    # payload
+    for vtx in vertices:
+        _write_vertex(f, vtx, fmt)
+
+def _write_index_section(
+    f,
+    indices: List[int],
+    primitive_groups: List[Tuple[int, int, int, int]],
+    use_32bit_index: bool,
+) -> None:
+    # choose index format name
+    index_fmt_name = "list32" if use_32bit_index else "list"
+    write_bytes(f, _pad_64bytes_ascii(index_fmt_name))
+    write_u32(f, len(indices))
+    write_u32(f, len(primitive_groups))
+
+    # raw index data
+    if use_32bit_index:
+        for ix in indices:
+            write_u32(f, ix)
+    else:
+        # 16-bit index; validate range
+        if max(indices) > 0xFFFF:
+            raise ValidationError("Indices exceed 16-bit range; enable use_32bit_index=True")
+        for ix in indices:
+            write_u16(f, ix)
+
+    # primitive groups raw stats (four u32 per group)
+    for (startIdx, numPrims, startVtx, numVtx) in primitive_groups:
+        write_u32(f, startIdx)
+        write_u32(f, numPrims)
+        write_u32(f, startVtx)
+        write_u32(f, numVtx)
+
+
+# ----------------------------
+# Vertex packing
+# ----------------------------
+
+def _write_vertex(f, vtx: Dict, fmt: VertexFormat) -> None:
+    """
+    Serialize one vertex according to the chosen VertexFormat.
+    """
+    for attr in fmt.attributes:
+        if attr.name == "position":
+            x, y, z = vtx["position"]
+            write_f32(f, x)
+            write_f32(f, y)
+            write_f32(f, z)
+
+        elif attr.name == "normal":
+            nx, ny, nz = vtx["normal"]
+            u, v = compress_dir_to_u16x2(nx, ny, nz)
+            write_u16(f, u)
+            write_u16(f, v)
+
+        elif attr.name == "uv0":
+            u, v = pack_uv(*vtx["uv0"] if "uv0" in vtx else vtx.get("uv", (0.0, 0.0)))
+            write_f32(f, u)
+            write_f32(f, v)
+
+        elif attr.name == "tangent":
+            tx, ty, tz = vtx.get("tangent", (1.0, 0.0, 0.0))
+            u, v = compress_dir_to_u16x2(tx, ty, tz)
+            write_u16(f, u)
+            write_u16(f, v)
+
+        elif attr.name == "binormal":
+            bx, by, bz = vtx.get("binormal", (0.0, 1.0, 0.0))
+            u, v = compress_dir_to_u16x2(bx, by, bz)
+            write_u16(f, u)
+            write_u16(f, v)
+
+        elif attr.name == "bone_idx":
+            # expects a list of up to 3 indices
+            b0, b1, b2 = quantize_indices_3(vtx.get("bone_idx") or vtx.get("bone_indices") or [])
+            write_u8(f, b0)
+            write_u8(f, b1)
+            write_u8(f, b2)
+
+        elif attr.name == "bone_w":
+            # expects a list of weights (float)
+            w0, w1, w2 = quantize_weights_3(vtx.get("bone_w") or vtx.get("bone_weights") or [])
+            # we only store w0, w1; w2 is implied by sum=255
+            write_u8(f, w0)
+            write_u8(f, w1)
+
+        else:
+            raise ValidationError(f"Unsupported vertex attribute in layout: {attr.name}")
+# ----------------------------
+# Debug / CLI entry (optional)
+# ----------------------------
+
+if __name__ == "__main__":
+    # Simple self-test: write a dummy .primitives with 1 triangle
+    import os
+    test_vertices = [
+        {
+            "position": (0.0, 0.0, 0.0),
+            "normal": (0.0, 0.0, 1.0),
+            "uv0": (0.0, 0.0),
+            "tangent": (1.0, 0.0, 0.0),
+            "binormal": (0.0, 1.0, 0.0),
+        },
+        {
+            "position": (1.0, 0.0, 0.0),
+            "normal": (0.0, 0.0, 1.0),
+            "uv0": (1.0, 0.0),
+            "tangent": (1.0, 0.0, 0.0),
+            "binormal": (0.0, 1.0, 0.0),
+        },
+        {
+            "position": (0.0, 1.0, 0.0),
+            "normal": (0.0, 0.0, 1.0),
+            "uv0": (0.0, 1.0),
+            "tangent": (1.0, 0.0, 0.0),
+            "binormal": (0.0, 1.0, 0.0),
+        },
+    ]
+    test_indices = [0, 1, 2]
+    test_groups = [(0, 1, 0, 3)]  # one triangle group
+
+    out_path = os.path.join(os.path.dirname(__file__), "test_output.primitives")
+    try:
+        export_primitives_file(
+            out_path,
+            test_vertices,
+            test_indices,
+            test_groups,
+            vertex_format_name="xyznuvtb",
+            use_32bit_index=False,
+        )
+        print(f"Dummy .primitives written to {out_path}")
+    except Exception as e:
+        import traceback
+        print("Error during test export:", e)
+        traceback.print_exc()
+
