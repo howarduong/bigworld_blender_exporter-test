@@ -2,7 +2,7 @@
 # Animation data processing for BigWorld export (aligned to official .animation format)
 
 import bpy
-from mathutils import Vector, Quaternion, Matrix
+from mathutils import Vector, Quaternion
 from ..utils import logger
 from ..utils.math_utils import blender_to_bigworld_matrix
 from ..utils.validation import ValidationError
@@ -10,10 +10,7 @@ from ..formats.animation_format import export_animation_file
 
 
 class AnimationProcessor:
-    """
-    Responsible for collecting and processing animation data
-    and converting it into BigWorld .animation format.
-    """
+    """负责收集和处理动画数据，并转换为 BigWorld .animation 格式"""
 
     def __init__(self):
         self.frame_cache = {}
@@ -21,8 +18,7 @@ class AnimationProcessor:
 
     def process(self, obj, action, settings):
         """
-        Process animation data for export.
-        Returns animation_data dict ready for export_animation_file().
+        处理动画数据，返回 animation_data dict，供 export_animation_file() 使用
         """
         logger.info(f"Processing animation: {action.name} for object: {obj.name}")
 
@@ -40,7 +36,10 @@ class AnimationProcessor:
             "duration": 0.0,
             "bones": [],
             "keyframes": [],
+            # 三个官方支持的 flag
             "loop": getattr(settings, "loop_animation", False),
+            "cognate": getattr(settings, "cognate", False),
+            "alpha": getattr(settings, "alpha", False),
         }
 
         # 处理骨骼层级
@@ -60,9 +59,7 @@ class AnimationProcessor:
         return animation_data
 
     def _process_bones(self, armature):
-        """
-        Collect bone hierarchy and assign stable indices.
-        """
+        """收集骨骼层级并分配稳定索引"""
         bones_data = []
         for idx, bone in enumerate(armature.data.bones):
             bone_data = {
@@ -74,9 +71,7 @@ class AnimationProcessor:
         return bones_data
 
     def _sample_animation(self, obj, action, settings, armature, bones_data):
-        """
-        Sample animation frames into TRS per bone.
-        """
+        """采样动画帧，生成每个骨骼的 TRS"""
         keyframes = []
         original_frame = bpy.context.scene.frame_current
 
@@ -87,7 +82,6 @@ class AnimationProcessor:
         # 遍历帧
         for frame in range(settings.start_frame, settings.end_frame + 1):
             bpy.context.scene.frame_set(frame)
-
             frame_data = {
                 "frame": frame,
                 "time": (frame - settings.start_frame) / settings.frame_rate,
@@ -111,9 +105,7 @@ class AnimationProcessor:
         return keyframes
 
     def _get_bone_transform(self, bone, settings):
-        """
-        Extract TRS for a bone at current frame, with coordinate system conversion.
-        """
+        """提取骨骼在当前帧的 TRS，并进行坐标系转换"""
         matrix = bone.matrix
 
         # 提取 TRS
@@ -142,9 +134,7 @@ class AnimationProcessor:
         }
 
     def _optimize_keyframes(self, keyframes):
-        """
-        Remove redundant frames with no significant change.
-        """
+        """移除无显著变化的冗余帧"""
         if len(keyframes) < 3:
             return keyframes
 
@@ -161,9 +151,7 @@ class AnimationProcessor:
         return optimized
 
     def _is_frame_significant(self, current, previous, next_frame):
-        """
-        判断当前帧是否有显著变化。
-        """
+        """判断当前帧是否有显著变化"""
         threshold = 0.001
         rot_threshold = 0.01
 
@@ -193,14 +181,13 @@ class AnimationProcessor:
         return False
 
     def export_animation_data(self, animation_data, filepath):
-        """
-        Export animation data to .animation binary file
-        """
+        """导出动画数据到 .animation 二进制文件"""
         export_animation_file(filepath, animation_data)
 
 
 def register():
     pass
+
 
 def unregister():
     pass
