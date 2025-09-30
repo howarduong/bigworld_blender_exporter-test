@@ -59,8 +59,11 @@ class BW_ExporterProperties(bpy.types.PropertyGroup):
 
     # 顶点格式（下拉菜单）
     def _vertex_format_items(self, context):
-        return [(f.identifier, f.identifier, f"Stride={f.vertex_size} bytes, Skinning={f.has_skinning}")
-                for f in vertex_formats.REGISTERED_FORMATS.values()]
+        return [
+            (f.identifier, f.identifier,
+             f"Stride={f.vertex_size} bytes, Skinning={f.has_skinning}")
+            for f in vertex_formats.REGISTERED_FORMATS.values()
+        ]
 
     vertex_format: EnumProperty(
         name="Vertex Format",
@@ -128,6 +131,21 @@ class BW_ExporterProperties(bpy.types.PropertyGroup):
         name="Collision Flags",
         default=0,
         description="Collision flags for material",
+    )
+    zBufferWrite: BoolProperty(
+        name="Z Buffer Write",
+        default=True,
+        description="Enable depth buffer writes",
+    )
+    castShadow: BoolProperty(
+        name="Cast Shadow",
+        default=True,
+        description="Enable shadow casting",
+    )
+    receiveShadow: BoolProperty(
+        name="Receive Shadow",
+        default=True,
+        description="Enable shadow receiving",
     )
 
 
