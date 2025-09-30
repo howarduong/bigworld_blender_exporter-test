@@ -1,193 +1,128 @@
 # 文件位置: bigworld_blender_exporter/core/animation_processor.py
-# Animation data processing for BigWorld export (aligned to official .animation format)
+# -*- coding: utf-8 -*-
+"""
+Animation data processing for BigWorld export (aligned to .animation format)
+
+改进点：
+- 收集骨骼层级
+- 收集关键帧（TRS）
+- 支持 markers（事件标记）
+- 支持 loop/cognate/alpha/interpolation 标志
+"""
 
 import bpy
-from mathutils import Vector, Quaternion
-from ..utils import logger
-from ..utils.math_utils import blender_to_bigworld_matrix
-from ..utils.validation import ValidationError
-from ..formats.animation_format import export_animation_file
+from typing import Dict, Any, List
+from ..utils import logger, math_utils
+
+LOG = logger.get_logger("animation_processor")
 
 
 class AnimationProcessor:
-    """负责收集和处理动画数据，并转换为 BigWorld .animation 格式"""
+    """负责从 Blender 动画数据中收集骨骼、关键帧和事件标记"""
 
-    def __init__(self):
-        self.frame_cache = {}
-        self.bone_cache = {}
-
-    def process(self, obj, action, settings):
+    def process(self, armature_obj: bpy.types.Object, action: bpy.types.Action, settings) -> Dict[str, Any]:
         """
-        处理动画数据，返回 animation_data dict，供 export_animation_file() 使用
+        收集动画数据，返回 animation_data dict，供 formats/animation_format 使用。
+
+        返回结构：
+        {
+          "name": str,
+          "bones": List[Dict{name,parent}],
+          "keyframes": List[Dict{frame,time,bone_transforms}],
+          "frame_rate": float,
+          "duration": float,
+          "loop": bool,
+          "cognate": bool,
+          "alpha": bool,
+          "interpolation": int,
+          "markers": List[Dict{time,name}]
+        }
         """
-        logger.info(f"Processing animation: {action.name} for object: {obj.name}")
+        LOG.info(f"Processing animation: {action.name} for armature {armature_obj.name}")
 
-        # 验证对象是否有骨架
-        armature = obj.find_armature()
-        if not armature:
-            logger.error(f"No armature found for animated object: {obj.name}")
-            return None
+        bones = self._collect_bones(armature_obj)
+        keyframes = self._collect_keyframes(armature_obj, action, bones, settings)
+        markers = self._collect_markers(action, settings)
 
-        # 动画数据结构
-        animation_data = {
+        start_frame = settings.start_frame
+        end_frame = settings.end_frame
+        frame_rate = settings.frame_rate
+        duration = (end_frame - start_frame + 1) / frame_rate
+
+        anim_data = {
             "name": action.name,
-            "frame_count": 0,
-            "frame_rate": settings.frame_rate,
-            "duration": 0.0,
-            "bones": [],
-            "keyframes": [],
-            # 三个官方支持的 flag
+            "bones": bones,
+            "keyframes": keyframes,
+            "frame_rate": frame_rate,
+            "duration": duration,
             "loop": getattr(settings, "loop_animation", False),
             "cognate": getattr(settings, "cognate", False),
             "alpha": getattr(settings, "alpha", False),
+            "interpolation": getattr(settings, "interpolation_mode", 0),
+            "markers": markers,
         }
 
-        # 处理骨骼层级
-        bones_data = self._process_bones(armature)
-        animation_data["bones"] = bones_data
+        LOG.info(f"Animation processed: {action.name}, frames={len(keyframes)}, markers={len(markers)}")
+        return anim_data
 
-        # 采样关键帧
-        keyframes = self._sample_animation(obj, action, settings, armature, bones_data)
-        animation_data["keyframes"] = keyframes
-        animation_data["frame_count"] = len(keyframes)
-
-        # 动画时长
-        frame_range = settings.end_frame - settings.start_frame + 1
-        animation_data["duration"] = frame_range / settings.frame_rate
-
-        logger.info(f"Processed {len(keyframes)} keyframes for {len(bones_data)} bones")
-        return animation_data
-
-    def _process_bones(self, armature):
-        """收集骨骼层级并分配稳定索引"""
-        bones_data = []
-        for idx, bone in enumerate(armature.data.bones):
-            bone_data = {
+    # ------------------------
+    # Internal helpers
+    # ------------------------
+    def _collect_bones(self, armature_obj: bpy.types.Object) -> List[Dict[str, Any]]:
+        bones = []
+        for bone in armature_obj.data.bones:
+            bones.append({
                 "name": bone.name,
-                "parent": bone.parent.name if bone.parent else None,
-                "index": idx,
-            }
-            bones_data.append(bone_data)
-        return bones_data
+                "parent": bone.parent.name if bone.parent else None
+            })
+        return bones
 
-    def _sample_animation(self, obj, action, settings, armature, bones_data):
-        """采样动画帧，生成每个骨骼的 TRS"""
+    def _collect_keyframes(self, armature_obj, action, bones, settings) -> List[Dict[str, Any]]:
+        """采样关键帧，收集每个骨骼的 TRS"""
+        start = settings.start_frame
+        end = settings.end_frame
+        frame_rate = settings.frame_rate
+
         keyframes = []
-        original_frame = bpy.context.scene.frame_current
+        scene = bpy.context.scene
+        prev_action = armature_obj.animation_data.action if armature_obj.animation_data else None
+        if armature_obj.animation_data:
+            armature_obj.animation_data.action = action
 
-        # 设置当前 Action
-        if obj.animation_data:
-            obj.animation_data.action = action
-
-        # 遍历帧
-        for frame in range(settings.start_frame, settings.end_frame + 1):
-            bpy.context.scene.frame_set(frame)
-            frame_data = {
+        for frame in range(start, end + 1):
+            scene.frame_set(frame)
+            time_sec = (frame - start) / frame_rate
+            bone_transforms = {}
+            for bone in bones:
+                pose_bone = armature_obj.pose.bones.get(bone["name"])
+                if not pose_bone:
+                    continue
+                mat = pose_bone.matrix
+                pos, rot, scl = math_utils.decompose_matrix(mat)
+                bone_transforms[bone["name"]] = {
+                    "position": pos,
+                    "rotation": rot,
+                    "scale": scl,
+                }
+            keyframes.append({
                 "frame": frame,
-                "time": (frame - settings.start_frame) / settings.frame_rate,
-                "bone_transforms": {}
-            }
+                "time": time_sec,
+                "bone_transforms": bone_transforms,
+            })
 
-            # 遍历骨骼
-            for bone in armature.pose.bones:
-                transform_data = self._get_bone_transform(bone, settings)
-                frame_data["bone_transforms"][bone.name] = transform_data
-
-            keyframes.append(frame_data)
-
-        # 恢复原始帧
-        bpy.context.scene.frame_set(original_frame)
-
-        # 关键帧优化
-        if settings.optimize_keyframes:
-            keyframes = self._optimize_keyframes(keyframes)
+        if armature_obj.animation_data and prev_action:
+            armature_obj.animation_data.action = prev_action
 
         return keyframes
 
-    def _get_bone_transform(self, bone, settings):
-        """提取骨骼在当前帧的 TRS，并进行坐标系转换"""
-        matrix = bone.matrix
-
-        # 提取 TRS
-        position = list(matrix.to_translation())
-        rotation = matrix.to_quaternion()
-        scale = list(matrix.to_scale())
-
-        # 坐标系转换
-        if settings.coordinate_system == "Y_UP":
-            M = blender_to_bigworld_matrix()
-            # 位置
-            pos_vec = Vector(position)
-            position = list(M @ pos_vec)
-            # 旋转
-            rot_mat = M.to_3x3() @ rotation.to_matrix()
-            rotation = rot_mat.to_quaternion()
-
-        # 全局缩放
-        if settings.global_scale != 1.0:
-            position = [p * settings.global_scale for p in position]
-
-        return {
-            "position": position,
-            "rotation": [rotation.x, rotation.y, rotation.z, rotation.w],
-            "scale": scale,
-        }
-
-    def _optimize_keyframes(self, keyframes):
-        """移除无显著变化的冗余帧"""
-        if len(keyframes) < 3:
-            return keyframes
-
-        optimized = [keyframes[0]]
-        for i in range(1, len(keyframes) - 1):
-            current = keyframes[i]
-            previous = keyframes[i - 1]
-            next_frame = keyframes[i + 1]
-            if self._is_frame_significant(current, previous, next_frame):
-                optimized.append(current)
-        optimized.append(keyframes[-1])
-
-        logger.info(f"Optimized keyframes: {len(keyframes)} -> {len(optimized)}")
-        return optimized
-
-    def _is_frame_significant(self, current, previous, next_frame):
-        """判断当前帧是否有显著变化"""
-        threshold = 0.001
-        rot_threshold = 0.01
-
-        for bone_name in current["bone_transforms"]:
-            if bone_name not in previous["bone_transforms"] or bone_name not in next_frame["bone_transforms"]:
-                return True
-
-            cur = current["bone_transforms"][bone_name]
-            prev = previous["bone_transforms"][bone_name]
-
-            # 位置差异
-            pos_diff = Vector(cur["position"]) - Vector(prev["position"])
-            if pos_diff.length > threshold:
-                return True
-
-            # 旋转差异
-            cur_rot = Quaternion(cur["rotation"])
-            prev_rot = Quaternion(prev["rotation"])
-            if cur_rot.rotation_difference(prev_rot).angle > rot_threshold:
-                return True
-
-            # 缩放差异
-            scale_diff = Vector(cur["scale"]) - Vector(prev["scale"])
-            if scale_diff.length > threshold:
-                return True
-
-        return False
-
-    def export_animation_data(self, animation_data, filepath):
-        """导出动画数据到 .animation 二进制文件"""
-        export_animation_file(filepath, animation_data)
-
-
-def register():
-    pass
-
-
-def unregister():
-    pass
+    def _collect_markers(self, action: bpy.types.Action, settings) -> List[Dict[str, Any]]:
+        """收集动画事件标记（markers）"""
+        markers = []
+        frame_rate = settings.frame_rate
+        for marker in action.pose_markers:
+            time_sec = (marker.frame - settings.start_frame) / frame_rate
+            markers.append({
+                "time": time_sec,
+                "name": marker.name,
+            })
+        return markers
