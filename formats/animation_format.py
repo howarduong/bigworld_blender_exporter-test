@@ -2,7 +2,6 @@
 # Animation file format for BigWorld export (aligned to official runtime expectations)
 
 import struct
-import os
 from ..utils.binary_writer import create_directory, write_u32, write_f32
 from ..utils.logger import get_logger
 from ..utils.validation import ValidationError
@@ -16,13 +15,24 @@ def export_animation_file(filepath, animation_data):
 
     animation_data dict expected keys:
       - name: str
-      - bones: list of { name, parent (or None), index }
-      - keyframes: list of { frame, time, bone_transforms: { bone_name: { position, rotation, scale } } }
+      - bones: list of { name: str, parent: str|None }
+      - keyframes: list of { frame: int, time: float,
+                     bone_transforms: { bone_name: { position: [x,y,z], rotation: [x,y,z,w], scale: [x,y,z] } } }
       - frame_rate: float
       - duration: float
       - loop: bool
+      - cognate: bool
+      - alpha: bool
     """
     logger.info(f"Exporting animation file: {filepath}")
+
+    # Basic validation
+    if "bones" not in animation_data or not animation_data["bones"]:
+        raise ValidationError("Animation export failed: no bones in animation_data")
+    if "keyframes" not in animation_data or not animation_data["keyframes"]:
+        raise ValidationError("Animation export failed: no keyframes in animation_data")
+    if "name" not in animation_data or not animation_data["name"]:
+        raise ValidationError("Animation export failed: missing animation name")
 
     create_directory(filepath)
     with open(filepath, "wb") as f:
@@ -32,78 +42,113 @@ def export_animation_file(filepath, animation_data):
 
 
 def _write_header(f, anim):
-    # Magic number (BigWorld convention, 0x42570101 or 0x42570100 depending on version)
+    """
+    Binary header layout (little-endian):
+      - magic: u32 (0x42570101)
+      - version: u32 (1)
+      - boneCount: u32
+      - frameCount: u32
+      - frameRate: f32
+      - duration: f32
+      - name: char[64] (null-terminated/truncated ASCII)
+      - flags: 4 bytes
+          [0] loop: u8 (0/1)
+          [1] cognate: u8 (0/1)
+          [2] alpha: u8 (0/1)
+          [3] reserved/padding: u8 (0)
+    """
+    # Magic number and version (keep aligned with current exporter expectations)
     f.write(struct.pack("<I", 0x42570101))
-    # Version (1)
     f.write(struct.pack("<I", 1))
 
-    # Bone count
+    # Counts and timings
     write_u32(f, len(anim["bones"]))
-    # Keyframe count
     write_u32(f, len(anim["keyframes"]))
-    # Frame rate
     write_f32(f, float(anim.get("frame_rate", 30.0)))
-    # Duration
     write_f32(f, float(anim.get("duration", 0.0)))
 
-    # Animation name (64 bytes, null-terminated)
-    name = anim["name"][:63].encode("ascii", errors="ignore")
-    f.write(name)
-    f.write(b"\0" * (64 - len(name)))
+    # Name (64 bytes, null-terminated)
+    name_bytes = anim["name"][:63].encode("ascii", errors="ignore")
+    f.write(name_bytes)
+    f.write(b"\0" * (64 - len(name_bytes)))
 
-    # Loop flag (u8) + padding
+    # Flags: loop, cognate, alpha, padding
     loop_flag = 1 if anim.get("loop", False) else 0
-    f.write(struct.pack("<B", loop_flag))
-    f.write(b"\0" * 3)
+    cognate_flag = 1 if anim.get("cognate", False) else 0
+    alpha_flag = 1 if anim.get("alpha", False) else 0
+    f.write(struct.pack("<BBBB", loop_flag, cognate_flag, alpha_flag, 0))
 
 
 def _write_bones(f, bones):
     """
-    Write bone hierarchy: name (32B), parent index (i32).
+    Write bone table:
+      - name: char[32] (null-terminated/truncated ASCII)
+      - parentIndex: i32 (-1 if no parent)
     """
-    for bone in bones:
-        # Bone name (32 bytes, null-terminated)
-        name = bone["name"][:31].encode("ascii", errors="ignore")
-        f.write(name)
-        f.write(b"\0" * (32 - len(name)))
+    # Precompute a name->index map for parent lookups
+    name_to_index = {b["name"]: i for i, b in enumerate(bones)}
 
+    for bone in bones:
+        # Name
+        bname = bone["name"][:31].encode("ascii", errors="ignore")
+        f.write(bname)
+        f.write(b"\0" * (32 - len(bname))
+
+        )
         # Parent index
         parent_index = -1
-        if bone.get("parent"):
-            for i, b in enumerate(bones):
-                if b["name"] == bone["parent"]:
-                    parent_index = i
-                    break
+        parent_name = bone.get("parent")
+        if parent_name:
+            parent_index = name_to_index.get(parent_name, -1)
         f.write(struct.pack("<i", parent_index))
 
 
 def _write_keyframes(f, keyframes, bones):
     """
-    Write keyframe data: for each frame, write frame index, time, then TRS for each bone in order.
+    For each keyframe:
+      - frame: u32
+      - time: f32
+      - For each bone in bones order:
+          position: f32 * 3
+          rotation: f32 * 4 (x, y, z, w)
+          scale:    f32 * 3
     """
     for kf in keyframes:
-        write_u32(f, kf["frame"])
-        write_f32(f, kf["time"])
+        # Per-frame header
+        write_u32(f, int(kf["frame"]))
+        write_f32(f, float(kf["time"]))
 
+        # Per-bone TRS in skeleton order
+        bt = kf.get("bone_transforms", {})
         for bone in bones:
             bname = bone["name"]
-            if bname not in kf["bone_transforms"]:
-                raise ValidationError(f"Missing transform for bone {bname} in frame {kf['frame']}")
+            if bname not in bt:
+                raise ValidationError(f"Missing transform for bone '{bname}' in frame {kf.get('frame')}")
 
-            tr = kf["bone_transforms"][bname]
+            tr = bt[bname]
+            pos = tr.get("position")
+            rot = tr.get("rotation")
+            scl = tr.get("scale")
 
-            # Position (3 floats)
-            write_f32(f, tr["position"][0])
-            write_f32(f, tr["position"][1])
-            write_f32(f, tr["position"][2])
+            if pos is None or len(pos) != 3:
+                raise ValidationError(f"Invalid position for bone '{bname}' at frame {kf.get('frame')}")
+            if rot is None or len(rot) != 4:
+                raise ValidationError(f"Invalid rotation for bone '{bname}' at frame {kf.get('frame')}")
+            if scl is None or len(scl) != 3:
+                raise ValidationError(f"Invalid scale for bone '{bname}' at frame {kf.get('frame')}")
 
-            # Rotation (4 floats: x, y, z, w) — must match core/animation_processor.py output
-            write_f32(f, tr["rotation"][0])
-            write_f32(f, tr["rotation"][1])
-            write_f32(f, tr["rotation"][2])
-            write_f32(f, tr["rotation"][3])
+            # Position
+            write_f32(f, float(pos[0]))
+            write_f32(f, float(pos[1]))
+            write_f32(f, float(pos[2]))
 
-            # Scale (3 floats)
-            write_f32(f, tr["scale"][0])
-            write_f32(f, tr["scale"][1])
-            write_f32(f, tr["scale"][2])
+            # Rotation (x, y, z, w) — must match AnimationProcessor output
+            write_f32(f, float(rot[0]))
+            write_f32(f, float(rot[1]))
+            write_f32(f, float(rot[2]))
+            write_f32(f, float(rot[3]))
+
+            # Scale
+            write_f32(f, float(scl[0]))
+            write_f32(f, float(scl[1]))
+            write_f32(f, float(scl[2]))
