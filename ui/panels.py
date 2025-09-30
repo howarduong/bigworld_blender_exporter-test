@@ -3,7 +3,8 @@
 
 import bpy
 from bpy.types import Panel
-import os
+from ..formats.vertex_formats import list_formats
+
 
 class BIGWORLD_PT_export_panel(Panel):
     """Main export panel"""
@@ -16,69 +17,61 @@ class BIGWORLD_PT_export_panel(Panel):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
-        settings = scene.bigworld_export
-        
+        settings = context.scene.bigworld_export
+
         # Export path
         col = layout.column(align=True)
         col.label(text="Export Settings 导出设置:", icon='EXPORT')
         col.prop(settings, "export_path", text="Path 路径")
-        
+
         # Export options
         box = layout.box()
         box.label(text="Export Options 导出选项:", icon='PREFERENCES')
-        
         col = box.column(align=True)
         col.prop(settings, "export_selected", text="Selected Only 仅选中")
         col.separator()
-        
         row = col.row(align=True)
         row.prop(settings, "export_mesh", text="Mesh 网格", icon='MESH_DATA')
         row.prop(settings, "export_skeleton", text="Skeleton 骨架", icon='ARMATURE_DATA')
-        
         row = col.row(align=True)
         row.prop(settings, "export_animation", text="Animation 动画", icon='ACTION')
         row.prop(settings, "export_materials", text="Materials 材质", icon='MATERIAL')
-        
         col.prop(settings, "export_collision", text="Collision 碰撞", icon='PHYSICS')
-        
-        # Scale and coordinate system
+
+        # Transform
         box = layout.box()
         box.label(text="Transform 变换:", icon='ORIENTATION_LOCAL')
         col = box.column(align=True)
         col.prop(settings, "global_scale", text="Scale 缩放")
         col.prop(settings, "coordinate_system", text="Coords 坐标系")
-        
+
         # Export buttons
         layout.separator()
         col = layout.column(align=True)
         col.scale_y = 1.5
-        
         if context.selected_objects:
             text = f"Export Selected ({len(context.selected_objects)}) 导出选中"
         else:
             text = "Export All 导出全部"
-            
         col.operator("export.bigworld_model", text=text, icon='EXPORT')
-        
         if settings.export_animation:
             col.operator("export.bigworld_animation", text="Export Animations 导出动画", icon='ACTION')
-        
+
         # Validation
         layout.separator()
         row = layout.row(align=True)
         row.operator("bigworld.validate_scene", text="Validate 验证", icon='CHECKMARK')
         row.operator("bigworld.fix_scene", text="Auto Fix 自动修复", icon='TOOL_SETTINGS')
-        
+
         # Status
         layout.separator()
         box = layout.box()
         box.label(text="Status 状态:", icon='INFO')
-        
         if hasattr(context.scene, 'bigworld_export_status'):
             box.label(text=context.scene.bigworld_export_status)
         else:
             box.label(text="Ready 就绪")
+
 
 class BIGWORLD_PT_model_settings(Panel):
     """Model settings panel"""
@@ -93,62 +86,32 @@ class BIGWORLD_PT_model_settings(Panel):
     def draw(self, context):
         layout = self.layout
         settings = context.scene.bigworld_export
-        
+
         # Mesh settings
         box = layout.box()
         box.label(text="Mesh Options 网格选项:", icon='MESH_DATA')
         col = box.column(align=True)
-        
         col.prop(settings, "apply_modifiers", text="Apply Modifiers 应用修改器")
         col.prop(settings, "triangulate_mesh", text="Triangulate 三角化")
         col.prop(settings, "optimize_mesh", text="Optimize 优化")
-        
         col.separator()
         col.prop(settings, "smoothing_angle", text="Smoothing 平滑角度")
+
+        # Vertex format dropdown
+        formats = list_formats()
+        items = [(f[0], f"{f[0]} ({'Skinned' if f[2] else 'Static'})", "") for f in formats]
         col.prop(settings, "vertex_format", text="Format 格式")
-        
+
+        # Index strategy
+        col.prop(settings, "use_32bit_index", text="Force 32-bit Indices 强制32位索引")
+
         # Data export
         box = layout.box()
         box.label(text="Export Data 导出数据:", icon='FILE')
         col = box.column(align=True)
-        
         col.prop(settings, "export_tangents", text="Tangents 切线")
         col.prop(settings, "export_vertex_colors", text="Vertex Colors 顶点色")
-        
-        # LOD settings
-        box = layout.box()
-        box.label(text="LOD Settings LOD设置:", icon='MOD_SIMPLIFY')
-        col = box.column(align=True)
-        
-        col.prop(settings, "generate_lods", text="Generate LODs 生成LOD")
-        if settings.generate_lods:
-            col.prop(settings, "lod_levels", text="Levels 级别")
-            
-            if context.active_object:
-                obj_settings = context.active_object.bigworld_model
-                col.separator()
-                col.label(text="LOD Distances LOD距离:")
-                col.prop(obj_settings, "lod_distance_1", text="LOD 1")
-                col.prop(obj_settings, "lod_distance_2", text="LOD 2")
-                col.prop(obj_settings, "lod_distance_3", text="LOD 3")
-        
-        # Per-object settings
-        if context.active_object:
-            box = layout.box()
-            box.label(text="Object Settings 对象设置:", icon='OBJECT_DATA')
-            obj_settings = context.active_object.bigworld_model
-            
-            col = box.column(align=True)
-            col.prop(obj_settings, "collision_type", text="Collision 碰撞")
-            col.prop(obj_settings, "bsp_type", text="BSP Type BSP类型")
-            
-            col.separator()
-            row = col.row(align=True)
-            row.prop(obj_settings, "is_static", text="Static 静态")
-            row.prop(obj_settings, "cast_shadow", text="Cast Shadow 投射阴影")
-            
-            col.prop(obj_settings, "receive_shadow", text="Receive Shadow 接收阴影")
-            col.prop(obj_settings, "extent", text="Extent 范围")
+
 
 class BIGWORLD_PT_animation_settings(Panel):
     """Animation settings panel"""
@@ -167,6 +130,7 @@ class BIGWORLD_PT_animation_settings(Panel):
     def draw(self, context):
         layout = self.layout
         settings = context.scene.bigworld_export
+
         box = layout.box()
         box.label(text="Animation Export 动画导出:", icon='ACTION')
         col = box.column(align=True)
@@ -175,13 +139,11 @@ class BIGWORLD_PT_animation_settings(Panel):
         col.prop(settings, "end_frame", text="End Frame 结束帧")
         col.prop(settings, "bake_animation", text="Bake Animation 烘焙动画")
         col.prop(settings, "optimize_keyframes", text="Optimize Keyframes 优化关键帧")
+        col.prop(settings, "loop_animation", text="Loop 循环")
+        col.prop(settings, "cognate", text="Cognate 同源")
+        col.prop(settings, "alpha", text="Alpha 混合")
 
-        # 动画导出按钮
-        layout.separator()
-        layout.operator("export.bigworld_animation", text="Export Animation 导出动画", icon='ACTION')
 
-
-# 材质设置面板
 class BIGWORLD_PT_material_settings(Panel):
     """Material settings panel"""
     bl_label = "Material Settings"
@@ -196,15 +158,16 @@ class BIGWORLD_PT_material_settings(Panel):
     def poll(cls, context):
         return context.scene.bigworld_export.export_materials
 
-    def draw(self, context):
-        layout = self.layout
-        settings = context.scene.bigworld_export
-        box = layout.box()
-        box.label(text="Material Export 材质导出:", icon='MATERIAL')
-        col = box.column(align=True)
-        col.prop(settings, "texture_path", text="Texture Path 贴图路径")
-        col.prop(settings, "copy_textures", text="Copy Textures 拷贝贴图")
-        col.prop(settings, "convert_to_dds", text="Convert to DDS 转DDS")
+def draw(self, context):
+    layout = self.layout
+    settings = context.scene.bigworld_export
+
+    box = layout.box()
+    box.label(text="Material Export 材质导出:", icon='MATERIAL')
+    col = box.column(align=True)
+    col.prop(settings, "texture_path", text="Texture Path 贴图路径")
+    col.prop(settings, "copy_textures", text="Copy Textures 复制贴图")
+    col.prop(settings, "convert_to_dds", text="Convert to DDS 转DDS")
 
 
 # 高级设置面板
@@ -218,30 +181,32 @@ class BIGWORLD_PT_advanced_settings(Panel):
     bl_parent_id = "BIGWORLD_PT_export_panel"
     bl_options = {'DEFAULT_CLOSED'}
 
+
     def draw(self, context):
         layout = self.layout
         settings = context.scene.bigworld_export
-        
+
         # Performance settings
         box = layout.box()
         box.label(text="Performance 性能:", icon='PREFERENCES')
         col = box.column(align=True)
         col.prop(settings, "optimize_mesh", text="Optimize Mesh 优化网格")
         col.prop(settings, "optimize_keyframes", text="Optimize Keyframes 优化关键帧")
-        
+
         # File settings
         box = layout.box()
         box.label(text="File Settings 文件设置:", icon='FILE')
         col = box.column(align=True)
         col.prop(settings, "copy_textures", text="Copy Textures 复制贴图")
         col.prop(settings, "convert_to_dds", text="Convert to DDS 转DDS")
-        
+
         # Debug settings
         box = layout.box()
         box.label(text="Debug 调试:", icon='CONSOLE')
         col = box.column(align=True)
         col.prop(settings, "export_vertex_colors", text="Export Vertex Colors 导出顶点色")
         col.prop(settings, "export_tangents", text="Export Tangents 导出切线")
+
 
 # 批量导出面板
 class BIGWORLD_PT_batch_export(Panel):
